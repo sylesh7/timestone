@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Unlock, Key, Download, Loader2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import TimestoneAPI from '@/lib/api';
@@ -25,6 +26,7 @@ interface UnlockResult {
 }
 
 export default function UnlockCapsule() {
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<UnlockData>({
     capsuleId: '',
     privateKey: '',
@@ -35,16 +37,36 @@ export default function UnlockCapsule() {
   const [result, setResult] = useState<UnlockResult | null>(null);
   const [capsuleMetadata, setCapsuleMetadata] = useState<any>(null);
   const [checkingCapsule, setCheckingCapsule] = useState(false);
+  const [autoFilledKey, setAutoFilledKey] = useState(false);
+
+  // Load capsule ID from URL parameters
+  useEffect(() => {
+    const capsuleId = searchParams.get('capsuleId');
+    if (capsuleId) {
+      setFormData(prev => ({ ...prev, capsuleId }));
+      checkCapsuleStatus(capsuleId);
+    }
+  }, [searchParams]);
 
   const checkCapsuleStatus = async (capsuleId: string) => {
     if (!capsuleId.trim()) return;
     
     setCheckingCapsule(true);
+    setAutoFilledKey(false);
+    
     try {
       const data = await TimestoneAPI.getCapsuleMetadata(capsuleId);
       
       if (data.success) {
         setCapsuleMetadata(data.capsule);
+        
+        // 🔑 CRITICAL FIX: Auto-fill private key if we have it stored
+        const storedPrivateKey = TimestoneAPI.getPrivateKey(capsuleId);
+        if (storedPrivateKey && !formData.privateKey) {
+          setFormData(prev => ({ ...prev, privateKey: storedPrivateKey }));
+          setAutoFilledKey(true);
+          console.log(`🔑 Auto-filled private key for capsule: ${capsuleId}`);
+        }
       } else {
         setCapsuleMetadata(null);
         setResult({ success: false, error: 'Capsule not found' });
@@ -106,7 +128,7 @@ export default function UnlockCapsule() {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: result.content.fileType });
+      const blob = new Blob([byteArray], { type: result.content?.fileType || 'application/octet-stream' });
       
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -130,6 +152,7 @@ export default function UnlockCapsule() {
   };
 
   const getFileTypeIcon = (type: string) => {
+    if (!type) return '📁'; // Fix for undefined/null type
     if (type.startsWith('image/')) return '🖼️';
     if (type.startsWith('video/')) return '🎥';
     if (type.startsWith('audio/')) return '🎵';
@@ -152,14 +175,14 @@ export default function UnlockCapsule() {
               <div className="bg-black/20 rounded-lg p-6 mb-6">
                 <div className="flex items-center justify-center mb-4">
                   <span className="text-4xl mr-3">
-                    {getFileTypeIcon(result.content!.fileType)}
+                    {getFileTypeIcon(result.content?.fileType || '')}
                   </span>
                   <div className="text-left">
                     <h3 className="text-lg font-semibold text-white">
                       {result.content!.fileName}
                     </h3>
                     <p className="text-sm text-gray-400">
-                      {formatFileSize(result.content!.fileSize)} • {result.content!.fileType}
+                      {formatFileSize(result.content?.fileSize || 0)} • {result.content?.fileType || 'Unknown'}
                     </p>
                   </div>
                 </div>
@@ -303,9 +326,16 @@ export default function UnlockCapsule() {
                 placeholder="Paste your private key here..."
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
-                This is the private key you received when creating the capsule
-              </p>
+              {autoFilledKey ? (
+                <p className="text-xs text-green-400 mt-1 flex items-center">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  ✅ Private key auto-filled from secure storage
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">
+                  This is the private key you received when creating the capsule
+                </p>
+              )}
             </div>
 
             {/* Error Display */}

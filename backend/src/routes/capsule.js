@@ -87,6 +87,23 @@ router.post('/create', upload.single('file'), async (req, res) => {
 });
 
 /**
+ * Get service statistics
+ * GET /api/capsule/stats
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const result = timeCapsuleService.getStats();
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get capsule metadata
  * GET /api/capsule/:id
  */
@@ -142,8 +159,8 @@ router.post('/unlock', async (req, res) => {
       content: {
         fileContent,
         fileName: result.content.metadata.name,
-        fileType: result.content.metadata.type,
-        fileSize: result.content.metadata.size,
+        fileType: result.content.metadata.originalType || result.content.metadata.detectedType || 'application/octet-stream',
+        fileSize: result.content.metadata.size || result.content.fileBuffer?.length || 0,
         message: result.content.message
       },
       capsuleInfo: result.capsuleInfo,
@@ -151,6 +168,60 @@ router.post('/unlock', async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Validate private key for a capsule (before unlocking)
+ * POST /api/capsule/validate-key
+ * Body: { capsuleId: string, privateKey: string }
+ */
+router.post('/validate-key', async (req, res) => {
+  try {
+    const { capsuleId, privateKey } = req.body;
+
+    if (!capsuleId || !privateKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: capsuleId, privateKey'
+      });
+    }
+
+    // Get capsule metadata
+    const capsuleResult = await timeCapsuleService.getCapsuleMetadata(capsuleId);
+    
+    if (!capsuleResult.success) {
+      return res.status(404).json({
+        success: false,
+        error: 'Capsule not found'
+      });
+    }
+
+    // Try to validate the private key by checking if it matches the public key format
+    // This is a basic validation - full validation happens during unlock
+    try {
+      const parsedPrivateKey = JSON.parse(privateKey);
+      const isValidFormat = parsedPrivateKey.x25519 && parsedPrivateKey.rsa && parsedPrivateKey.algorithm;
+      
+      res.json({
+        success: true,
+        valid: isValidFormat,
+        capsule: capsuleResult.capsule,
+        canUnlock: capsuleResult.canUnlock,
+        message: isValidFormat ? 'Private key format is valid' : 'Private key format is invalid'
+      });
+    } catch (parseError) {
+      res.json({
+        success: true,
+        valid: false,
+        message: 'Private key is not in valid JSON format'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
       success: false,
       error: error.message
     });
@@ -184,16 +255,36 @@ router.get('/user/:address', async (req, res) => {
 });
 
 /**
- * Get service statistics
- * GET /api/capsule/stats
+ * Check if capsule can be unlocked (time-based check)
+ * GET /api/capsule/:id/can-unlock
  */
-router.get('/stats', async (req, res) => {
+router.get('/:id/can-unlock', async (req, res) => {
   try {
-    const result = timeCapsuleService.getStats();
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing capsule ID'
+      });
+    }
+
+    const result = await timeCapsuleService.getCapsuleMetadata(id);
     
-    res.json(result);
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    res.json({
+      success: true,
+      capsuleId: id,
+      canUnlock: result.canUnlock,
+      unlockTimestamp: result.capsule.metadata.unlockTimestamp,
+      currentTime: new Date().toISOString(),
+      timeRemaining: result.canUnlock ? 0 : new Date(result.capsule.metadata.unlockTimestamp).getTime() - new Date().getTime()
+    });
   } catch (error) {
-    res.status(500).json({
+    res.status(404).json({
       success: false,
       error: error.message
     });

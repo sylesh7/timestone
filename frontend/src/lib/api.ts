@@ -137,6 +137,28 @@ export class TimestoneAPI {
     return this.handleResponse(response);
   }
 
+  static async validatePrivateKey(capsuleId: string, privateKey: string) {
+    const response = await fetch(`${API_BASE_URL}/api/capsule/validate-key`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ capsuleId, privateKey }),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Debug endpoints
+  static async getDebugInfo() {
+    const response = await fetch(`${API_BASE_URL}/api/debug/debug`);
+    return this.handleResponse(response);
+  }
+
+  static async getDebugCapsules() {
+    const response = await fetch(`${API_BASE_URL}/api/debug/capsules`);
+    return this.handleResponse(response);
+  }
+
   // Utility methods
   static async fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -175,6 +197,7 @@ export class TimestoneAPI {
 
   // File type utilities
   static getFileTypeIcon(mimeType: string): string {
+    if (!mimeType) return '📁'; // Fix for undefined mimeType
     if (mimeType.startsWith('image/')) return '🖼️';
     if (mimeType.startsWith('video/')) return '🎥';
     if (mimeType.startsWith('audio/')) return '🎵';
@@ -182,6 +205,52 @@ export class TimestoneAPI {
     if (mimeType.includes('document') || mimeType.includes('text')) return '📝';
     if (mimeType.includes('archive') || mimeType.includes('zip')) return '📦';
     return '📁';
+  }
+
+  // Private Key Management
+  static savePrivateKey(capsuleId: string, privateKey: string): void {
+    try {
+      localStorage.setItem(`timestone_capsule_${capsuleId}`, JSON.stringify(privateKey));
+      console.log(`🔑 Private key saved for capsule: ${capsuleId}`);
+    } catch (error) {
+      console.error('Failed to save private key:', error);
+    }
+  }
+
+  static getPrivateKey(capsuleId: string): string | null {
+    try {
+      const stored = localStorage.getItem(`timestone_capsule_${capsuleId}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error('Failed to retrieve private key:', error);
+      return null;
+    }
+  }
+
+  static getAllStoredCapsules(): Array<{capsuleId: string, hasPrivateKey: boolean}> {
+    try {
+      const capsules: Array<{capsuleId: string, hasPrivateKey: boolean}> = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('timestone_capsule_')) {
+          const capsuleId = key.replace('timestone_capsule_', '');
+          capsules.push({ capsuleId, hasPrivateKey: true });
+        }
+      }
+      return capsules;
+    } catch (error) {
+      console.error('Failed to get stored capsules:', error);
+      return [];
+    }
+  }
+
+  static removePrivateKey(capsuleId: string): void {
+    try {
+      localStorage.removeItem(`timestone_capsule_${capsuleId}`);
+      console.log(`🗑️ Private key removed for capsule: ${capsuleId}`);
+    } catch (error) {
+      console.error('Failed to remove private key:', error);
+    }
   }
 
   static formatFileSize(bytes: number): string {

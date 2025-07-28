@@ -98,6 +98,11 @@ export default function CreateCapsule() {
       const data = await TimestoneAPI.createTimeCapsule(capsuleData);
 
       if (data.success) {
+        // 🔑 CRITICAL FIX: Save the private key to localStorage
+        if (data.privateKey && data.capsule?.id) {
+          TimestoneAPI.savePrivateKey(data.capsule.id, data.privateKey);
+        }
+        
         setResult({
           success: true,
           capsule: data.capsule,
@@ -125,6 +130,7 @@ export default function CreateCapsule() {
   };
 
   const getFileTypeIcon = (type: string) => {
+    if (!type) return '📁'; // Fix for undefined/null type
     if (type.startsWith('image/')) return '🖼️';
     if (type.startsWith('video/')) return '🎥';
     if (type.startsWith('audio/')) return '🎵';

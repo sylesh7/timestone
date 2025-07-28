@@ -113,9 +113,29 @@ class TimeCapsuleService {
    * @param {string} capsuleId - Capsule ID
    * @returns {Object} Capsule metadata
    */
-  getCapsuleMetadata(capsuleId) {
+  async getCapsuleMetadata(capsuleId) {
     try {
-      const capsule = this.capsules.get(capsuleId);
+      let capsule = this.capsules.get(capsuleId);
+      
+      // If not found in memory, try to recover from IPFS (for server restarts)
+      if (!capsule) {
+        console.log(`🔍 Capsule ${capsuleId} not found in memory, attempting IPFS recovery...`);
+        try {
+          // Check if we can find it by scanning IPFS uploads
+          // This is a fallback for when server restarts and loses memory
+          capsule = await this.recoverCapsuleFromIPFS(capsuleId);
+          if (capsule) {
+            console.log(`✅ Successfully recovered capsule ${capsuleId} from IPFS`);
+            // Store back in memory
+            this.capsules.set(capsuleId, capsule);
+          } else {
+            console.log(`❌ Could not recover capsule ${capsuleId} from IPFS`);
+          }
+        } catch (recoverError) {
+          console.log(`❌ IPFS recovery failed for ${capsuleId}:`, recoverError.message);
+          // If recovery fails, capsule truly doesn't exist
+        }
+      }
       
       if (!capsule) {
         throw new Error('Capsule not found');
@@ -135,6 +155,80 @@ class TimeCapsuleService {
   }
 
   /**
+   * Attempt to recover capsule from IPFS (fallback for server restarts)
+   * @param {string} capsuleId - Capsule ID to recover
+   * @returns {Promise<Object|null>} Recovered capsule or null
+   */
+  async recoverCapsuleFromIPFS(capsuleId) {
+    try {
+      console.log(`🔍 Searching IPFS for capsule: ${capsuleId}`);
+      
+      // Get list of pinned files and search for our capsule
+      const pinnedFiles = await this.pinata.listPinnedFiles({ limit: 100 });
+      console.log(`📋 Found ${pinnedFiles.files?.length || 0} files on IPFS`);
+      
+      if (!pinnedFiles.files || pinnedFiles.files.length === 0) {
+        console.log('❌ No files found on IPFS');
+        return null;
+      }
+      
+      for (const file of pinnedFiles.files) {
+        console.log(`🔍 Checking file: ${file.name} (${file.ipfsHash})`);
+        
+        // Look for files that contain our capsule ID
+        if (file.name && file.name.includes(capsuleId)) {
+          console.log(`✅ Found potential match: ${file.name}`);
+          
+          try {
+            // Download and parse the capsule data
+            console.log(`📥 Downloading capsule data from IPFS: ${file.ipfsHash}`);
+            const capsuleData = await this.pinata.downloadTimeCapsule(file.ipfsHash);
+            
+            if (capsuleData && capsuleData.id === capsuleId) {
+              console.log(`✅ Successfully parsed capsule data for: ${capsuleId}`);
+              
+              // Reconstruct capsule reference (without private key for security)
+              const recoveredCapsule = {
+                id: capsuleId,
+                ipfsHash: file.ipfsHash,
+                fileName: file.name,
+                metadata: capsuleData.metadata,
+                encryption: capsuleData.encryption,
+                pinata: {
+                  ipfsHash: file.ipfsHash,
+                  gateway: `https://gateway.pinata.cloud/ipfs/${file.ipfsHash}`,
+                  pinataUrl: `https://app.pinata.cloud/pinmanager?filter=${file.ipfsHash}`,
+                  uploadedAt: file.timestamp
+                },
+                fileAnalysis: capsuleData.fileAnalysis || {},
+                // Note: privateKey is NOT recovered for security - user must provide it
+                // But we store a placeholder to indicate it's a recovered capsule
+                recovered: true,
+                recoveredAt: new Date().toISOString()
+              };
+              
+              console.log(`🎉 Successfully recovered capsule: ${capsuleId}`);
+              return recoveredCapsule;
+            } else {
+              console.log(`❌ Capsule ID mismatch: expected ${capsuleId}, got ${capsuleData?.id || 'undefined'}`);
+            }
+          } catch (parseError) {
+            console.log(`❌ Failed to parse file ${file.name}:`, parseError.message);
+            // Skip files that can't be parsed as capsules
+            continue;
+          }
+        }
+      }
+      
+      console.log(`❌ No matching capsule found for ID: ${capsuleId}`);
+      return null;
+    } catch (error) {
+      console.warn(`❌ Failed to recover capsule ${capsuleId} from IPFS:`, error.message);
+      return null;
+    }
+  }
+
+  /**
    * Unlock and decrypt time capsule
    * @param {string} capsuleId - Capsule ID
    * @param {string} privateKey - Private key for decryption
@@ -143,7 +237,18 @@ class TimeCapsuleService {
    */
   async unlockTimeCapsule(capsuleId, privateKey, requesterAddress) {
     try {
-      const capsule = this.capsules.get(capsuleId);
+      let capsule = this.capsules.get(capsuleId);
+      
+      // If not found in memory, try to recover from IPFS
+      if (!capsule) {
+        console.log(`🔍 Capsule ${capsuleId} not found in memory, attempting IPFS recovery for unlock...`);
+        capsule = await this.recoverCapsuleFromIPFS(capsuleId);
+        if (capsule) {
+          console.log(`✅ Successfully recovered capsule ${capsuleId} from IPFS for unlock`);
+          // Store back in memory
+          this.capsules.set(capsuleId, capsule);
+        }
+      }
       
       if (!capsule) {
         throw new Error('Capsule not found');
@@ -160,9 +265,11 @@ class TimeCapsuleService {
       }
 
       // Download capsule data from Pinata IPFS
+      console.log(`📥 Downloading capsule data from IPFS: ${capsule.ipfsHash}`);
       const capsuleData = await this.pinata.downloadTimeCapsule(capsule.ipfsHash);
 
       // Decrypt the file
+      console.log(`🔓 Attempting to decrypt capsule with provided private key...`);
       const decryptedFile = this.encryption.decryptFile(
         capsuleData.encryptedContent,
         privateKey
@@ -172,6 +279,8 @@ class TimeCapsuleService {
       capsule.metadata.status = 'unlocked';
       capsule.metadata.unlockedAt = new Date().toISOString();
       capsule.metadata.unlockedBy = requesterAddress;
+
+      console.log(`🎉 Successfully unlocked capsule: ${capsuleId}`);
 
       return {
         success: true,
@@ -188,6 +297,7 @@ class TimeCapsuleService {
         }
       };
     } catch (error) {
+      console.error(`❌ Failed to unlock capsule ${capsuleId}:`, error.message);
       throw new Error(`Failed to unlock capsule: ${error.message}`);
     }
   }
@@ -241,22 +351,53 @@ class TimeCapsuleService {
    */
   getStats() {
     try {
-      const totalCapsules = this.capsules.size;
-      const unlockedCapsules = Array.from(this.capsules.values())
-        .filter(c => c.metadata.status === 'unlocked').length;
+      // Safely get capsule count
+      const totalCapsules = this.capsules ? this.capsules.size : 0;
+      
+      let unlockedCapsules = 0;
+      
+      // Safely calculate unlocked capsules
+      if (this.capsules && this.capsules.size > 0) {
+        try {
+          unlockedCapsules = Array.from(this.capsules.values())
+            .filter(c => c && c.metadata && c.metadata.status === 'unlocked').length;
+        } catch (filterError) {
+          console.warn('Error calculating unlocked capsules:', filterError.message);
+          unlockedCapsules = 0;
+        }
+      }
+      
+      const stats = {
+        totalCapsules,
+        sealedCapsules: Math.max(0, totalCapsules - unlockedCapsules),
+        unlockedCapsules,
+        encryptionAlgorithm: this.encryption ? this.encryption.KYBER_VARIANT : 'Kyber-768-Simulation',
+        timestamp: new Date().toISOString(),
+        serverStatus: 'online'
+      };
+      
+      console.log('📊 Stats calculated successfully:', stats);
       
       return {
         success: true,
-        stats: {
-          totalCapsules,
-          sealedCapsules: totalCapsules - unlockedCapsules,
-          unlockedCapsules,
-          encryptionAlgorithm: this.encryption.KYBER_VARIANT,
-          timestamp: new Date().toISOString()
-        }
+        stats
       };
     } catch (error) {
-      throw new Error(`Failed to get stats: ${error.message}`);
+      console.error('❌ Error getting stats:', error.message);
+      
+      // Return safe fallback stats instead of crashing
+      return {
+        success: true,
+        stats: {
+          totalCapsules: 0,
+          sealedCapsules: 0,
+          unlockedCapsules: 0,
+          encryptionAlgorithm: 'Kyber-768-Simulation',
+          timestamp: new Date().toISOString(),
+          serverStatus: 'online',
+          error: 'Stats calculation failed, showing defaults'
+        }
+      };
     }
   }
 }
