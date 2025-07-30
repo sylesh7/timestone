@@ -167,19 +167,16 @@ export default function CreateCapsule() {
         success: true,
         capsule: data.capsule,
         privateKey: data.privateKey,
-        fileId: fileId,
-        message: 'Time capsule created and locked on-chain successfully!'
+        fileId: fileId
       });
-
-    } catch (error: any) {
-      console.error('Error creating capsule:', error);
-      setResult({ 
-        success: false, 
-        error: error.message || 'Failed to create time capsule'  
-      });
-    } finally {
-      setUploading(false);
-    }
+      } catch (error: any) {
+        setResult({ 
+          success: false, 
+          error: error?.message || 'Failed to create time capsule'  
+        });
+      } finally {
+        setUploading(false);
+      }
   };
 
   const formatFileSize = (bytes: number) => {
