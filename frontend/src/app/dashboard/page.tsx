@@ -159,13 +159,16 @@ export default function Dashboard() {
     
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     
     if (days > 0) {
       return `${days} day${days > 1 ? 's' : ''} remaining`;
     } else if (hours > 0) {
       return `${hours} hour${hours > 1 ? 's' : ''} remaining`;
+    } else if (minutes > 0) {
+      return `${minutes} minute${minutes > 1 ? 's' : ''} remaining`;
     } else {
-      return 'Less than 1 hour remaining';
+      return 'Less than 1 minute remaining';
     }
   };
 

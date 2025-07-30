@@ -187,36 +187,27 @@ export default function UnlockCapsule() {
         throw new Error(`File is still locked until ${currentUnlockTime.toLocaleString()}`);
       }
       
-      if (currentIsUnlocked) {
-        console.log('File already unlocked, proceeding to download...');
-      } else {
-        console.log('Unlocking file on blockchain...');
-        
-        // Step 1: Request unlock first
-        try {
-          const requestTx = await contract.requestUnlock(bytes32FileId);
-          await requestTx.wait();
-          console.log('Unlock requested successfully');
-        } catch (requestError: any) {
-          console.log('Request unlock failed, trying direct confirmUnlock:', requestError.message);
-        }
-        
-        // Step 2: Confirm unlock with fee
-        const unlockFee = ethers.parseEther("0.001");
-        console.log('Confirming unlock with fee:', ethers.formatEther(unlockFee));
-        
-        const confirmTx = await contract.confirmUnlock(bytes32FileId, { value: unlockFee });
-        const receipt = await confirmTx.wait();
-        console.log('Unlock confirmed on-chain');
-        
-        // Verify unlock was successful
-        const updatedFileInfo = await contract.getFileInfo(bytes32FileId);
-        const [, , , , , newIsUnlocked] = updatedFileInfo;
-        
-        if (!newIsUnlocked) {
-          throw new Error('File was not unlocked on-chain');
-        }
-      }
+             if (currentIsUnlocked) {
+         console.log('File already unlocked, proceeding to download...');
+       } else {
+         console.log('Unlocking file on blockchain...');
+         
+         // Call confirmUnlock directly (this handles the unlock with fee)
+         const unlockFee = ethers.parseEther("0.001");
+         console.log('Unlocking with fee:', ethers.formatEther(unlockFee));
+         
+         const unlockTx = await contract.confirmUnlock(bytes32FileId, { value: unlockFee });
+         const receipt = await unlockTx.wait();
+         console.log('Unlock confirmed on-chain');
+         
+         // Verify unlock was successful
+         const updatedFileInfo = await contract.getFileInfo(bytes32FileId);
+         const [, , , , , newIsUnlocked] = updatedFileInfo;
+         
+         if (!newIsUnlocked) {
+           throw new Error('File was not unlocked on-chain');
+         }
+       }
 
       // Step 3: Download from IPFS
       console.log('Downloading from IPFS hash:', currentIpfsHash);
@@ -503,11 +494,26 @@ export default function UnlockCapsule() {
                   <p><span className="text-white">Owner:</span> {truncateAddress(capsuleMetadata.owner)}</p>
                   <p><span className="text-white">Status:</span> {capsuleMetadata.status}</p>
                   <p><span className="text-white">Unlock Time:</span> {new Date(capsuleMetadata.unlockTimestamp).toLocaleString()}</p>
-                  {!isUnlockable(capsuleMetadata.unlockTimestamp) && (
-                    <p className="text-yellow-300 font-medium">
-                      ⏱️ Unlocks in: {Math.ceil((new Date(capsuleMetadata.unlockTimestamp).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days
-                    </p>
-                  )}
+                                     {!isUnlockable(capsuleMetadata.unlockTimestamp) && (
+                     <p className="text-yellow-300 font-medium">
+                       ⏱️ Unlocks in: {(() => {
+                         const timeDiff = new Date(capsuleMetadata.unlockTimestamp).getTime() - Date.now();
+                         const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                         const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                         const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                         
+                         if (days > 0) {
+                           return `${days} day${days > 1 ? 's' : ''}`;
+                         } else if (hours > 0) {
+                           return `${hours} hour${hours > 1 ? 's' : ''}`;
+                         } else if (minutes > 0) {
+                           return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+                         } else {
+                           return 'less than a minute';
+                         }
+                       })()}
+                     </p>
+                   )}
                 </div>
               </div>
             )}
