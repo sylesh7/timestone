@@ -519,4 +519,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-} // Fixed: Added missing closing brace
+}
