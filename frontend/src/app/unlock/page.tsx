@@ -5,9 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Unlock, Key, Download, Loader2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import TimestoneAPI from '@/lib/api';
+import { ethers } from 'ethers';
+import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
+import { useAccount } from 'wagmi';
 
 interface UnlockData {
-  capsuleId: string;
+  fileId: string;
   privateKey: string;
   requesterAddress: string;
 }
@@ -26,9 +29,10 @@ interface UnlockResult {
 }
 
 export default function UnlockCapsule() {
+  const { address, isConnected } = useAccount();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<UnlockData>({
-    capsuleId: '',
+    fileId: '',
     privateKey: '',
     requesterAddress: ''
   });
@@ -41,39 +45,56 @@ export default function UnlockCapsule() {
 
   // Load capsule ID from URL parameters
   useEffect(() => {
-    const capsuleId = searchParams.get('capsuleId');
-    if (capsuleId) {
-      setFormData(prev => ({ ...prev, capsuleId }));
-      checkCapsuleStatus(capsuleId);
+    const fileId = searchParams.get('fileId');
+    if (fileId) {
+      setFormData(prev => ({ ...prev, fileId }));
+      checkCapsuleStatus(fileId);
     }
   }, [searchParams]);
 
-  const checkCapsuleStatus = async (capsuleId: string) => {
-    if (!capsuleId.trim()) return;
+  const checkCapsuleStatus = async (fileId: string) => {
+    if (!fileId.trim()) return;
     
     setCheckingCapsule(true);
     setAutoFilledKey(false);
     
     try {
-      const data = await TimestoneAPI.getCapsuleMetadata(capsuleId);
+      if (!(window as any).ethereum) {
+        throw new Error('No wallet found');
+      }
+
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const contract = new ethers.Contract(TIME_ORACLE_FILE_LOCKER_ADDRESS, TIME_ORACLE_FILE_LOCKER_ABI, provider);
       
-      if (data.success) {
-        setCapsuleMetadata(data.capsule);
+      const fileInfo = await contract.getFileInfo(fileId);
+      
+      if (fileInfo) {
+        const [ipfsHash, fileName, unlockTimestamp, owner, lockFee, isUnlocked] = fileInfo;
         
-        // 🔑 CRITICAL FIX: Auto-fill private key if we have it stored
-        const storedPrivateKey = TimestoneAPI.getPrivateKey(capsuleId);
+        setCapsuleMetadata({
+          fileId,
+          ipfsHash,
+          fileName,
+          unlockTimestamp: new Date(Number(unlockTimestamp) * 1000).toISOString(),
+          owner,
+          lockFee: ethers.formatEther(lockFee),
+          isUnlocked,
+          status: isUnlocked ? 'unlocked' : 'locked'
+        });
+         // Auto-fill private key if we have it stored
+        const storedPrivateKey = TimestoneAPI.getPrivateKey(fileId);
         if (storedPrivateKey && !formData.privateKey) {
           setFormData(prev => ({ ...prev, privateKey: storedPrivateKey }));
           setAutoFilledKey(true);
-          console.log(`🔑 Auto-filled private key for capsule: ${capsuleId}`);
+          console.log(`🔑 Auto-filled private key for file: ${fileId}`);
         }
       } else {
         setCapsuleMetadata(null);
-        setResult({ success: false, error: 'Capsule not found' });
+        setResult({ success: false, error: 'File not found on-chain' });
       }
-    } catch (error) {
+    } catch (error: any) {
       setCapsuleMetadata(null);
-      setResult({ success: false, error: 'Failed to check capsule status' });
+      setResult({ success: false, error: `Failed to check file status: ${error.message}` });
     } finally {
       setCheckingCapsule(false);
     }
@@ -82,7 +103,12 @@ export default function UnlockCapsule() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.capsuleId || !formData.privateKey || !formData.requesterAddress) {
+    if (!isConnected) {
+      setResult({ success: false, error: 'Please connect your wallet first' });
+      return;
+    }
+    
+    if (!formData.fileId || !formData.privateKey || !formData.requesterAddress) {
       setResult({ success: false, error: 'Please fill in all required fields' });
       return;
     }
@@ -91,27 +117,71 @@ export default function UnlockCapsule() {
     setResult(null);
 
     try {
-      const unlockData = {
-        capsuleId: formData.capsuleId,
-        privateKey: formData.privateKey,
-        requesterAddress: formData.requesterAddress
-      };
-
-      const data = await TimestoneAPI.unlockTimeCapsule(unlockData);
-
-      if (data.success) {
-        setResult({
-          success: true,
-          content: data.content,
-          capsuleInfo: data.capsuleInfo
-        });
-      } else {
-        setResult({ success: false, error: data.error || 'Failed to unlock capsule' });
+      if (!(window as any).ethereum) {
+        throw new Error('No wallet found');
       }
-    } catch (error) {
+
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(TIME_ORACLE_FILE_LOCKER_ADDRESS, TIME_ORACLE_FILE_LOCKER_ABI, signer);
+
+      console.log('Requesting unlock for fileId:', formData.fileId);
+      
+      // Call requestUnlock (emits UnlockRequested event)
+      const requestTx = await contract.requestUnlock(formData.fileId);
+      await requestTx.wait();
+      
+      console.log('Unlock requested, waiting for time oracle confirmation...');
+
+      // Step 2: Confirm unlock (requires time oracle rollup confirmation)
+      const unlockFee = ethers.parseEther("0.001"); // 0.001 XTZ unlock fee
+      
+      console.log('Confirming unlock with fee:', ethers.formatEther(unlockFee));
+      
+      const confirmTx = await contract.confirmUnlock(formData.fileId, { value: unlockFee });
+      const receipt = await confirmTx.wait();
+      
+      console.log('Unlock confirmed on-chain');
+
+      // Step 3: Get file info from contract and download from IPFS
+      const fileInfo = await contract.getFileInfo(formData.fileId);
+      const [ipfsHash, fileName, unlockTimestamp, owner, lockFee, isUnlocked] = fileInfo;
+
+      if (!isUnlocked) {
+        throw new Error('File was not unlocked on-chain');
+      }
+
+      // Step 4: Download and decrypt from IPFS (keep existing logic)
+      const fileBuffer = await TimestoneAPI.downloadFromPinata(ipfsHash);
+      
+      // Decrypt using private key (existing logic)
+      const decryptedData = await TimestoneAPI.decryptData(
+        { encryptedData: fileBuffer },
+        formData.privateKey
+      );
+
+      setResult({
+        success: true,
+        content: {
+          fileContent: decryptedData.toString('base64'),
+          fileName: fileName,
+          fileType: 'application/octet-stream',
+          fileSize: fileBuffer.byteLength,
+          message: 'File unlocked successfully from IPFS and decrypted!'
+        },
+        capsuleInfo: {
+          fileId: formData.fileId,
+          ipfsHash,
+          fileName,
+          unlockedAt: new Date().toISOString()
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Error unlocking capsule:', error);
       setResult({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Network error occurred' 
+        error: error.message || 'Failed to unlock time capsule' 
       });
     } finally {
       setUnlocking(false);
@@ -249,11 +319,11 @@ export default function UnlockCapsule() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={formData.capsuleId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, capsuleId: e.target.value }))}
-                  onBlur={() => checkCapsuleStatus(formData.capsuleId)}
+                  value={formData.fileId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fileId: e.target.value }))}
+                  onBlur={() => checkCapsuleStatus(formData.fileId)}
                   className="flex-1 px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
-                  placeholder="Enter capsule ID (UUID)"
+                  placeholder="Enter capsule ID (Field_ID)"
                   required
                 />
                 {checkingCapsule && (
@@ -351,7 +421,7 @@ export default function UnlockCapsule() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={unlocking || !formData.capsuleId || !formData.privateKey || !formData.requesterAddress}
+              disabled={unlocking || !formData.fileId || !formData.privateKey || !formData.requesterAddress}
               className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {unlocking ? (

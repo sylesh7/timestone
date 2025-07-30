@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, CheckCircle, User, Calendar, FileIcon, Eye, Unlock, MessageSquare } from 'lucide-react';
 import TimestoneAPI from '@/lib/api';
+import { ethers } from 'ethers';
+import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
+import { useAccount } from 'wagmi';
 
 interface Capsule {
-  id: string;
+  fileId: string; // Fixed: was 'fileid'
   fileName: string;
   metadata: {
     fileName: string;
@@ -26,24 +29,58 @@ interface Capsule {
 }
 
 export default function Dashboard() {
-  const [userAddress, setUserAddress] = useState('');
+  const { address, isConnected } = useAccount();
   const [capsules, setCapsules] = useState<Capsule[]>([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
   const loadUserCapsules = async () => {
-    if (!userAddress.trim()) return;
-    
+    if (!isConnected || !address) {
+      setCapsules([]);
+      return;
+    }  
     setLoading(true);
     try {
-      const data = await TimestoneAPI.getUserCapsules(userAddress);
-      
-      if (data.success) {
-        setCapsules(data.capsules || []);
+      if (!(window as any).ethereum) {
+        throw new Error('No wallet found');
       }
+
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const contract = new ethers.Contract(TIME_ORACLE_FILE_LOCKER_ADDRESS, TIME_ORACLE_FILE_LOCKER_ABI, provider);
+      
+      // Get all fileIds for the connected user
+      const fileIds = await contract.getUserFiles(address);
+      
+      // Get detailed info for each file
+      const capsulesData = await Promise.all(fileIds.map(async (fileId: string) => {
+        const fileInfo = await contract.getFileInfo(fileId);
+        const [ipfsHash, fileName, unlockTimestamp, owner, lockFee, isUnlocked] = fileInfo;
+        
+        return {
+          fileId, // Fixed: consistent naming
+          fileName,
+          metadata: {
+            fileName,
+            unlockTimestamp: new Date(Number(unlockTimestamp) * 1000).toISOString(),
+            creatorAddress: owner,
+            recipientAddress: address,
+            status: isUnlocked ? 'unlocked' : 'locked',
+            createdAt: new Date().toISOString(), // Contract doesn't store creation time
+            message: ''
+          },
+          canUnlock: !isUnlocked && new Date(Number(unlockTimestamp) * 1000) <= new Date(),
+          role: address.toLowerCase() === owner.toLowerCase() ? 'creator' : 'recipient',
+          pinata: {
+            ipfsHash,
+            gateway: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
+          }
+        };
+      }));
+      
+      setCapsules(capsulesData);
     } catch (error) {
-      console.error('Failed to load capsules:', error);
+      console.error('Failed to load capsules from contract:', error);
       setCapsules([]);
     } finally {
       setLoading(false);
@@ -53,21 +90,19 @@ export default function Dashboard() {
   const loadStats = async () => {
     setLoadingStats(true);
     try {
-      const data = await TimestoneAPI.getStats();
+      const totalCapsules = capsules.length;
+      const sealedCapsules = capsules.filter(c => c.metadata.status === 'locked').length;
+      const unlockedCapsules = capsules.filter(c => c.metadata.status === 'unlocked').length;
       
-      if (data.success && data.stats) {
-        setStats(data.stats);
-      } else {
-        // Set fallback stats if backend returns failure
-        setStats({
-          totalCapsules: 0,
-          sealedCapsules: 0,
-          unlockedCapsules: 0,
-          encryptionAlgorithm: 'Kyber-768-Simulation',
-          serverStatus: 'online',
-          error: 'Stats unavailable'
-        });
-      }
+      // Fixed: Removed reference to undefined 'data' variable
+      setStats({
+        totalCapsules,
+        sealedCapsules,
+        unlockedCapsules,
+        encryptionAlgorithm: 'Kyber-768-Simulation',
+        serverStatus: 'online',
+        blockchain: 'Etherlink Testnet'
+      });
     } catch (error) {
       console.error('Failed to load stats:', error);
       // Set fallback stats on error
@@ -85,8 +120,16 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (isConnected && address) {
+      loadUserCapsules();
+    } else {
+      setCapsules([]);
+    }
+  }, [isConnected, address]);
+
+  useEffect(() => {
     loadStats();
-  }, []);
+  }, [capsules]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -97,11 +140,14 @@ export default function Dashboard() {
   };
 
   const getFileTypeIcon = (type: string) => {
-    if (!type) return '📁'; // Fix for undefined/null type
-    if (type.includes('image')) return '🖼️';
-    if (type.includes('video')) return '🎥';
-    if (type.includes('audio')) return '🎵';
-    return '📄';
+    if (!type) return '📁';
+    if (type.startsWith('image/')) return '🖼️';
+    if (type.startsWith('video/')) return '🎥';
+    if (type.startsWith('audio/')) return '🎵';
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('document') || type.includes('text')) return '📝';
+    if (type.includes('archive') || type.includes('zip')) return '📦';
+    return '📁';
   };
 
   const getTimeRemaining = (unlockTimestamp: string) => {
@@ -279,15 +325,15 @@ export default function Dashboard() {
               <div className="flex gap-3">
                 <input
                   type="text"
-                  value={userAddress}
-                  onChange={(e) => setUserAddress(e.target.value)}
+                  value={address || ''}
+                  onChange={(e) => {}}
                   className="flex-1 px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
                   placeholder="0x1234...abcd or your identifier"
                   onKeyPress={(e) => e.key === 'Enter' && loadUserCapsules()}
                 />
                 <button
                   onClick={loadUserCapsules}
-                  disabled={!userAddress.trim() || loading}
+                  disabled={!isConnected || loading}
                   className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {loading ? (
@@ -308,12 +354,11 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">
-                  Capsules for {userAddress} ({capsules.length})
+                  Capsules for {address} ({capsules.length})
                 </h2>
                 <button
                   onClick={() => {
                     setCapsules([]);
-                    setUserAddress('');
                   }}
                   className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
@@ -323,7 +368,7 @@ export default function Dashboard() {
               
               {capsules.map((capsule) => (
                 <div
-                  key={capsule.id}
+                  key={capsule.fileId} // Fixed: use fileId consistently
                   className="bg-black/30 rounded-lg p-6 border border-white/10 hover:border-white/20 transition-colors"
                 >
                   <div className="flex items-start justify-between">
@@ -392,7 +437,7 @@ export default function Dashboard() {
                       <div className="text-xs text-gray-500">
                         <p>
                           <span className="text-white">Capsule ID:</span> 
-                          <span className="font-mono ml-1">{capsule.id}</span>
+                          <span className="font-mono ml-1">{capsule.fileId}</span>
                         </p>
                         {capsule.pinata?.ipfsHash && (
                           <p>
@@ -406,7 +451,7 @@ export default function Dashboard() {
                     <div className="ml-6 flex flex-col gap-2">
                       {capsule.canUnlock ? (
                         <Link
-                          href={`/unlock?capsuleId=${capsule.id}`}
+                          href={`/unlock?capsuleId=${capsule.fileId}`} // Fixed: use fileId
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
                         >
                           <Unlock className="w-4 h-4" />
@@ -420,7 +465,7 @@ export default function Dashboard() {
                       )}
                       
                       <Link
-                        href={`/unlock?capsuleId=${capsule.id}`}
+                        href={`/unlock?capsuleId=${capsule.fileId}`} // Fixed: use fileId
                         className="border border-purple-500/50 text-purple-300 hover:bg-purple-500/20 px-4 py-2 rounded-lg text-sm transition-colors text-center"
                       >
                         <Eye className="w-4 h-4 inline mr-1" />
@@ -431,12 +476,20 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-          ) : userAddress && !loading ? (
+          ) : !isConnected || !address ? (
+            <div className="text-center py-12">
+              <User className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-400 mb-2">Connect Your Wallet</h3>
+              <p className="text-gray-500 mb-6">
+                Please connect your wallet to load and view your time capsules.
+              </p>
+            </div>
+          ) : (
             <div className="text-center py-12">
               <FileIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-400 mb-2">No Capsules Found</h3>
               <p className="text-gray-500 mb-6">
-                No time capsules found for address: {userAddress}
+                No time capsules found for address: {address}
               </p>
               <Link
                 href="/create"
@@ -444,14 +497,6 @@ export default function Dashboard() {
               >
                 Create Your First Capsule
               </Link>
-            </div>
-          ) : !userAddress && (
-            <div className="text-center py-12">
-              <User className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-400 mb-2">Enter Your Address</h3>
-              <p className="text-gray-500 mb-6">
-                Enter your address above to load and view your time capsules.
-              </p>
             </div>
           )}
 
@@ -474,4 +519,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+} // Fixed: Added missing closing brace

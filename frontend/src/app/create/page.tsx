@@ -4,6 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Calendar, User, MessageSquare, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import TimestoneAPI from '@/lib/api';
+import { ethers } from 'ethers';
+import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
+import { useAccount } from 'wagmi';
 
 interface CreateCapsuleData {
   file: File | null;
@@ -17,11 +20,13 @@ interface CreateCapsuleData {
 interface CapsuleResult {
   success: boolean;
   capsule?: any;
+  fileId?: string;
   privateKey?: string;
   error?: string;
 }
 
 export default function CreateCapsule() {
+  const { address, isConnected } = useAccount();
   const [formData, setFormData] = useState<CreateCapsuleData>({
     file: null,
     recipientAddress: '',
@@ -71,6 +76,11 @@ export default function CreateCapsule() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!isConnected) {
+      setResult({ success: false, error: 'Please connect your wallet first' });
+      return;
+    }
+    
     if (!formData.file || !formData.recipientAddress || !formData.creatorAddress || !formData.unlockDate) {
       setResult({ success: false, error: 'Please fill in all required fields' });
       return;
@@ -97,24 +107,75 @@ export default function CreateCapsule() {
 
       const data = await TimestoneAPI.createTimeCapsule(capsuleData);
 
-      if (data.success) {
-        // 🔑 CRITICAL FIX: Save the private key to localStorage
-        if (data.privateKey && data.capsule?.id) {
-          TimestoneAPI.savePrivateKey(data.capsule.id, data.privateKey);
-        }
-        
-        setResult({
-          success: true,
-          capsule: data.capsule,
-          privateKey: data.privateKey
-        });
-      } else {
-        setResult({ success: false, error: data.error || 'Failed to create capsule' });
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create time capsule');
       }
-    } catch (error) {
+
+      // Step 2: Lock on-chain using smart contract
+      if (!(window as any).ethereum) {
+        throw new Error('No wallet found');
+      }
+
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(TIME_ORACLE_FILE_LOCKER_ADDRESS, TIME_ORACLE_FILE_LOCKER_ABI, signer);
+
+      // Convert unlockTimestamp to seconds
+      const unlockTimestamp = Math.floor(unlockDateTime.getTime() / 1000);
+      
+      // Set lock fee to 0.001 XTZ
+      const lockFee = ethers.parseEther("0.001");
+
+      console.log('Locking file on-chain:', {
+        ipfsHash: data.capsule.ipfsHash,
+        fileName: formData.file.name,
+        unlockTimestamp,
+        lockFee: ethers.formatEther(lockFee)
+      });
+
+      // Call lockFile on the contract
+      const tx = await contract.lockFile(
+        data.capsule.ipfsHash,
+        formData.file.name,
+        unlockTimestamp,
+        { value: lockFee }
+      );
+
+      console.log('Transaction sent:', tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      
+      // Get fileId from the FileLocked event
+      const event = receipt.logs.map((log: any) => {
+        try {
+          return contract.interface.parseLog(log);
+        } catch {
+          return null;
+        }
+      }).find((e: any) => e && e.name === 'FileLocked');
+      
+      const fileId = event?.args?.fileId;
+
+      if (!fileId) {
+        throw new Error('Failed to get fileId from transaction');
+      }
+
+      console.log('File locked on-chain with fileId:', fileId);
+
+      setResult({
+        success: true,
+        capsule: data.capsule,
+        privateKey: data.privateKey,
+        fileId: fileId,
+        message: 'Time capsule created and locked on-chain successfully!'
+      });
+
+    } catch (error: any) {
+      console.error('Error creating capsule:', error);
       setResult({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Network error occurred' 
+        error: error.message || 'Failed to create time capsule'  
       });
     } finally {
       setUploading(false);

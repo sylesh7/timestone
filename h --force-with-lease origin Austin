@@ -1,0 +1,5 @@
+[33mc76a6d4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mAustin[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m Added Wallet connection
+[33m28bba7d[m Fixing contract conflicts
+[33m7591161[m Fix : Decryption works now
+[33m9958de4[m Merge branch 'Austin'
+[33mb746c9e[m Added custom Smart roll up for time capsule verification
