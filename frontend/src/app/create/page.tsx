@@ -4,6 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Calendar, User, MessageSquare, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import TimestoneAPI from '@/lib/api';
+import { ethers } from 'ethers';
+import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
+import { useAccount } from 'wagmi';
 
 interface CreateCapsuleData {
   file: File | null;
@@ -18,362 +21,315 @@ interface CapsuleResult {
   success: boolean;
   capsule?: any;
   privateKey?: string;
+  fileId?: string;
   error?: string;
 }
 
 export default function CreateCapsule() {
+  const { address, isConnected } = useAccount();
   const [formData, setFormData] = useState<CreateCapsuleData>({
     file: null,
     recipientAddress: '',
     creatorAddress: '',
     message: '',
     unlockDate: '',
-    unlockTime: '12:00'
+    unlockTime: ''
   });
   
-  const [dragActive, setDragActive] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<CapsuleResult | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (file: File) => {
+  const handleInputChange = (field: keyof CreateCapsuleData, value: string | File) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
     setFormData(prev => ({ ...prev, file }));
-    
-    // Create preview for images
-    if (file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
-    }
-  };
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileChange(e.dataTransfer.files[0]);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.file || !formData.recipientAddress || !formData.creatorAddress || !formData.unlockDate) {
+    if (!isConnected || !address) {
+      setResult({ success: false, error: 'Please connect your wallet first' });
+      return;
+    }
+
+    if (!formData.file || !formData.recipientAddress || !formData.unlockDate || !formData.unlockTime) {
       setResult({ success: false, error: 'Please fill in all required fields' });
       return;
     }
 
-    // Validate unlock date is in the future
-    const unlockDateTime = new Date(`${formData.unlockDate}T${formData.unlockTime}`);
-    if (unlockDateTime <= new Date()) {
-      setResult({ success: false, error: 'Unlock date must be in the future' });
-      return;
-    }
-
-    setUploading(true);
+    setLoading(true);
     setResult(null);
 
     try {
-      const capsuleData = {
-        file: formData.file,
-        recipientAddress: formData.recipientAddress,
-        creatorAddress: formData.creatorAddress,
-        message: formData.message,
-        unlockTimestamp: unlockDateTime.toISOString(),
-      };
-
-      const data = await TimestoneAPI.createTimeCapsule(capsuleData);
-
-      if (data.success) {
-        // 🔑 CRITICAL FIX: Save the private key to localStorage
-        if (data.privateKey && data.capsule?.id) {
-          TimestoneAPI.savePrivateKey(data.capsule.id, data.privateKey);
-        }
-        
-        setResult({
-          success: true,
-          capsule: data.capsule,
-          privateKey: data.privateKey
-        });
-      } else {
-        setResult({ success: false, error: data.error || 'Failed to create capsule' });
+      // Step 1: Encrypt and upload to IPFS
+      console.log('Encrypting and uploading file...');
+      const uploadResult = await TimestoneAPI.uploadToPinata(formData.file);
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Failed to upload to IPFS');
       }
+
+      console.log('File uploaded to IPFS:', uploadResult.ipfsHash);
+
+      // Step 2: Calculate unlock timestamp
+      const unlockDateTime = new Date(`${formData.unlockDate}T${formData.unlockTime}`);
+      const unlockTimestamp = Math.floor(unlockDateTime.getTime() / 1000);
+
+      if (unlockTimestamp <= Math.floor(Date.now() / 1000)) {
+        throw new Error('Unlock time must be in the future');
+      }
+
+      // Step 3: Lock file on-chain
+      console.log('Locking file on-chain...');
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(
+        TIME_ORACLE_FILE_LOCKER_ADDRESS,
+        TIME_ORACLE_FILE_LOCKER_ABI,
+        signer
+      );
+
+      const lockFee = ethers.parseEther("0.001"); // 0.001 XTZ fee
+      
+      const tx = await contract.lockFile(
+        uploadResult.ipfsHash,
+        formData.file.name,
+        unlockTimestamp,
+        formData.recipientAddress,
+        { value: lockFee }
+      );
+
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      // Extract fileId from the FileLocked event
+      const fileLockedEvent = receipt.logs.find((log: any) => 
+        log.topics[0] === contract.interface.getEventTopic('FileLocked')
+      );
+
+      if (!fileLockedEvent) {
+        throw new Error('FileLocked event not found in transaction');
+      }
+
+      const decodedEvent = contract.interface.parseLog(fileLockedEvent);
+      const fileId = decodedEvent.args.fileId;
+
+      console.log('File locked successfully with fileId:', fileId);
+
+      setResult({
+        success: true,
+        privateKey: uploadResult.privateKey,
+        fileId: fileId
+      });
+
     } catch (error) {
-      setResult({ 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Network error occurred' 
+      console.error('Error creating capsule:', error);
+      setResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create time capsule'
       });
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getFileTypeIcon = (type: string) => {
-    if (!type) return '📁'; // Fix for undefined/null type
-    if (type.startsWith('image/')) return '🖼️';
-    if (type.startsWith('video/')) return '🎥';
-    if (type.startsWith('audio/')) return '🎵';
-    return '📄';
-  };
-
-  if (result?.success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
-            <div className="text-center">
-              <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-white mb-4">Time Capsule Created Successfully!</h1>
-              <p className="text-gray-300 mb-6">
-                Your file has been encrypted and stored securely. Save your private key - you'll need it to unlock the capsule.
-              </p>
-              
-              <div className="bg-black/20 rounded-lg p-4 mb-6">
-                <h3 className="text-sm font-semibold text-gray-300 mb-2">Capsule Details:</h3>
-                <div className="text-left text-sm text-gray-400 space-y-1">
-                  <p><span className="text-white">ID:</span> {result.capsule?.id}</p>
-                  <p><span className="text-white">File:</span> {result.capsule?.fileName}</p>
-                  <p><span className="text-white">IPFS Hash:</span> {result.capsule?.pinata?.ipfsHash}</p>
-                  <p><span className="text-white">Unlock Date:</span> {new Date(result.capsule?.metadata?.unlockTimestamp).toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
-                <h3 className="text-sm font-semibold text-red-300 mb-2">⚠️ IMPORTANT - Save Your Private Key:</h3>
-                <div className="bg-black/40 rounded p-3 text-xs font-mono text-gray-300 break-all">
-                  {result.privateKey}
-                </div>
-                <p className="text-xs text-red-300 mt-2">
-                  This key is required to unlock your capsule. Store it safely - we cannot recover it for you.
-                </p>
-              </div>
-
-              <div className="flex gap-4 justify-center">
-                <Link
-                  href="/create"
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
-                >
-                  Create Another
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="border border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white px-6 py-2 rounded-lg transition-all"
-                >
-                  View Dashboard
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center mb-8">
-          <Link href="/" className="flex items-center text-gray-300 hover:text-white transition-colors">
+          <Link href="/" className="flex items-center text-white hover:text-purple-300 transition-colors">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Home
           </Link>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
-          <h1 className="text-3xl font-bold text-white mb-8 text-center">Create Time Capsule</h1>
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+            <div className="text-center mb-8">
+              <Upload className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+              <h1 className="text-3xl font-bold text-white mb-2">Create Time Capsule</h1>
+              <p className="text-gray-300">Lock your file with time-based encryption and send it to a recipient</p>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* File Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Upload File <span className="text-red-400">*</span>
-              </label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                  dragActive
-                    ? 'border-purple-400 bg-purple-400/10'
-                    : 'border-gray-500 hover:border-gray-400'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                {formData.file ? (
-                  <div className="space-y-4">
-                    {previewUrl && (
-                      <img 
-                        src={previewUrl} 
-                        alt="Preview" 
-                        className="w-32 h-32 object-cover rounded-lg mx-auto"
-                      />
-                    )}
-                    <div className="text-white">
-                      <p className="font-medium">
-                        {getFileTypeIcon(formData.file.type)} {formData.file.name}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        {formatFileSize(formData.file.size)} • {formData.file.type}
-                      </p>
+            {result?.success ? (
+              <div className="bg-green-900/20 backdrop-blur-lg rounded-xl p-6 border border-green-500/30">
+                <div className="flex items-center mb-4">
+                  <CheckCircle className="w-6 h-6 text-green-400 mr-2" />
+                  <h3 className="text-lg font-semibold text-green-400">Capsule Created Successfully!</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-gray-300">File ID:</span>
+                    <p className="text-white font-mono text-sm break-all">{result.fileId}</p>
+                  </div>
+                  
+                  <div>
+                    <span className="text-gray-300">Private Key:</span>
+                    <div className="mt-2 p-3 bg-black/30 rounded-lg border border-gray-600">
+                      <p className="text-white font-mono text-sm break-all">{result.privateKey}</p>
                     </div>
+                    <p className="text-xs text-yellow-300 mt-2">
+                      ⚠️ Save this private key securely! You'll need it to unlock the capsule.
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-3">
                     <button
-                      type="button"
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, file: null }));
-                        setPreviewUrl(null);
+                        navigator.clipboard.writeText(result.fileId || '');
                       }}
-                      className="text-red-400 hover:text-red-300 text-sm"
+                      className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
-                      Remove File
+                      Copy File ID
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(result.privateKey || '');
+                      }}
+                      className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                    >
+                      Copy Private Key
                     </button>
                   </div>
-                ) : (
-                  <div>
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-300 mb-2">
-                      Drag and drop your file here, or{' '}
-                      <label className="text-purple-400 hover:text-purple-300 cursor-pointer">
-                        browse
-                        <input
-                          type="file"
-                          className="hidden"
-                          onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
-                          accept="*/*"
-                        />
-                      </label>
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Supports: Photos, Videos, Audio, Documents (Max: 100MB)
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Creator Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <User className="w-4 h-4 inline mr-1" />
-                Your Address <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.creatorAddress}
-                onChange={(e) => setFormData(prev => ({ ...prev, creatorAddress: e.target.value }))}
-                className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
-                placeholder="0x1234...abcd or your identifier"
-                required
-              />
-            </div>
-
-            {/* Recipient Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <User className="w-4 h-4 inline mr-1" />
-                Recipient Address <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.recipientAddress}
-                onChange={(e) => setFormData(prev => ({ ...prev, recipientAddress: e.target.value }))}
-                className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
-                placeholder="0x5678...efgh or recipient identifier"
-                required
-              />
-            </div>
-
-            {/* Unlock Date & Time */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Unlock Date <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.unlockDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, unlockDate: e.target.value }))}
-                  className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
-                  min={new Date().toISOString().split('T')[0]}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Unlock Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.unlockTime}
-                  onChange={(e) => setFormData(prev => ({ ...prev, unlockTime: e.target.value }))}
-                  className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Message */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <MessageSquare className="w-4 h-4 inline mr-1" />
-                Message (Optional)
-              </label>
-              <textarea
-                value={formData.message}
-                onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                rows={4}
-                className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none resize-none"
-                placeholder="Write a message for the future..."
-              />
-            </div>
-
-            {/* Error Display */}
-            {result?.success === false && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                <div className="flex items-center">
-                  <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
-                  <p className="text-red-300">{result.error}</p>
                 </div>
               </div>
-            )}
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* File Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    File *
+                  </label>
+                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-purple-500 transition-colors">
+                    <input
+                      type="file"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="file-upload"
+                      required
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-white">
+                        {formData.file ? formData.file.name : 'Click to upload file'}
+                      </p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        {formData.file ? `${(formData.file.size / 1024 / 1024).toFixed(2)} MB` : 'Max 10MB'}
+                      </p>
+                    </label>
+                  </div>
+                </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={uploading || !formData.file}
-              className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Creating Time Capsule...
-                </>
-              ) : (
-                'Create Time Capsule'
-              )}
-            </button>
-          </form>
+                {/* Recipient Address */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Recipient Address *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.recipientAddress}
+                    onChange={(e) => handleInputChange('recipientAddress', e.target.value)}
+                    placeholder="Enter recipient's wallet address"
+                    className="w-full px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+                    required
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    The address that will receive and be able to unlock this capsule
+                  </p>
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Message (Optional)
+                  </label>
+                  <textarea
+                    value={formData.message}
+                    onChange={(e) => handleInputChange('message', e.target.value)}
+                    placeholder="Add a personal message..."
+                    rows={3}
+                    className="w-full px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none resize-none"
+                  />
+                </div>
+
+                {/* Unlock Date */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Unlock Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.unlockDate}
+                    onChange={(e) => handleInputChange('unlockDate', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                {/* Unlock Time */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Unlock Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.unlockTime}
+                    onChange={(e) => handleInputChange('unlockTime', e.target.value)}
+                    className="w-full px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                {/* Fee Information */}
+                <div className="bg-blue-900/20 backdrop-blur-lg rounded-xl p-4 border border-blue-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-blue-300">Lock Fee:</span>
+                    <span className="text-white font-semibold">0.001 XTZ</span>
+                  </div>
+                  <p className="text-xs text-blue-200 mt-1">
+                    This fee is required to lock your file on the blockchain
+                  </p>
+                </div>
+
+                {/* Error Display */}
+                {result?.success === false && (
+                  <div className="bg-red-900/20 backdrop-blur-lg rounded-xl p-4 border border-red-500/30">
+                    <div className="flex items-center">
+                      <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+                      <p className="text-red-300">{result.error}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !isConnected}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Creating Capsule...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5 mr-2" />
+                      Create Time Capsule
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>
