@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Calendar, User, MessageSquare, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import TimestoneAPI from '@/lib/api';
@@ -30,7 +30,7 @@ export default function CreateCapsule() {
   const [formData, setFormData] = useState<CreateCapsuleData>({
     file: null,
     recipientAddress: '',
-    creatorAddress: '',
+    creatorAddress: address || '',
     message: '',
     unlockDate: '',
     unlockTime: '12:00'
@@ -40,6 +40,13 @@ export default function CreateCapsule() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<CapsuleResult | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Update creator address when wallet connects
+  React.useEffect(() => {
+    if (address && !formData.creatorAddress) {
+      setFormData(prev => ({ ...prev, creatorAddress: address }));
+    }
+  }, [address]);
 
   const handleFileChange = (file: File) => {
     setFormData(prev => ({ ...prev, file }));
@@ -83,6 +90,12 @@ export default function CreateCapsule() {
     
     if (!formData.file || !formData.recipientAddress || !formData.creatorAddress || !formData.unlockDate) {
       setResult({ success: false, error: 'Please fill in all required fields' });
+      return;
+    }
+
+    // Validate addresses are different
+    if (formData.creatorAddress.toLowerCase() === formData.recipientAddress.toLowerCase()) {
+      setResult({ success: false, error: 'Creator and recipient addresses must be different' });
       return;
     }
 
@@ -130,14 +143,16 @@ export default function CreateCapsule() {
         ipfsHash: data.capsule.ipfsHash,
         fileName: formData.file.name,
         unlockTimestamp,
+        recipient: formData.recipientAddress,
         lockFee: ethers.formatEther(lockFee)
       });
 
-      // Call lockFile on the contract
+      // Call lockFile on the contract with recipient parameter
       const tx = await contract.lockFile(
         data.capsule.ipfsHash,
         formData.file.name,
         unlockTimestamp,
+        formData.recipientAddress, // Pass recipient address
         { value: lockFee }
       );
 
@@ -213,6 +228,8 @@ export default function CreateCapsule() {
                   <p><span className="text-white">ID:</span> {result.capsule?.id}</p>
                   <p><span className="text-white">File:</span> {result.capsule?.fileName}</p>
                   <p><span className="text-white">IPFS Hash:</span> {result.capsule?.pinata?.ipfsHash}</p>
+                  <p><span className="text-white">Creator:</span> {formData.creatorAddress}</p>
+                  <p><span className="text-white">Recipient:</span> {formData.recipientAddress}</p>
                   <p><span className="text-white">Unlock Date:</span> {new Date(result.capsule?.metadata?.unlockTimestamp).toLocaleString()}</p>
                 </div>
               </div>
@@ -334,16 +351,20 @@ export default function CreateCapsule() {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 <User className="w-4 h-4 inline mr-1" />
-                Your Address <span className="text-red-400">*</span>
+                Your Address (Creator) <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
                 value={formData.creatorAddress}
                 onChange={(e) => setFormData(prev => ({ ...prev, creatorAddress: e.target.value }))}
                 className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
-                placeholder="0x1234...abcd or your identifier"
+                placeholder="0x1234...abcd (your wallet address)"
                 required
+                readOnly={!!address} // Make read-only if wallet is connected
               />
+              {address && (
+                <p className="text-xs text-green-400 mt-1">✓ Auto-filled from connected wallet</p>
+              )}
             </div>
 
             {/* Recipient Address */}
@@ -357,9 +378,10 @@ export default function CreateCapsule() {
                 value={formData.recipientAddress}
                 onChange={(e) => setFormData(prev => ({ ...prev, recipientAddress: e.target.value }))}
                 className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
-                placeholder="0x5678...efgh or recipient identifier"
+                placeholder="0x5678...efgh (recipient wallet address)"
                 required
               />
+              <p className="text-xs text-gray-400 mt-1">This person will be able to unlock the capsule after the unlock time</p>
             </div>
 
             {/* Unlock Date & Time */}

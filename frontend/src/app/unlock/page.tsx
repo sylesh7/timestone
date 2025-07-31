@@ -52,7 +52,7 @@ export default function UnlockCapsule() {
 
   // Load capsule ID from URL parameters
   useEffect(() => {
-    const fileId = searchParams.get('fileId');
+    const fileId = searchParams.get('fileId') || searchParams.get('capsuleId');
     if (fileId) {
       setFormData(prev => ({ ...prev, fileId }));
       checkCapsuleStatus(fileId);
@@ -105,7 +105,7 @@ export default function UnlockCapsule() {
       const fileInfo = await contract.getFileInfo(bytes32FileId);
       
       if (fileInfo && fileInfo[0]) { // Check if ipfsHash exists and is not empty
-        const [ipfsHash, fileName, unlockTimestamp, owner, lockFee, isUnlocked] = fileInfo;
+        const [ipfsHash, fileName, unlockTimestamp, owner, recipient, lockFee, isUnlocked] = fileInfo;
         
         setCapsuleMetadata({
           fileId,
@@ -113,6 +113,7 @@ export default function UnlockCapsule() {
           fileName,
           unlockTimestamp: new Date(Number(unlockTimestamp) * 1000).toISOString(),
           owner,
+          recipient,
           lockFee: ethers.formatEther(lockFee),
           isUnlocked,
           status: isUnlocked ? 'unlocked' : 'locked'
@@ -174,7 +175,7 @@ export default function UnlockCapsule() {
       
       // First, check current status
       const currentFileInfo = await contract.getFileInfo(bytes32FileId);
-      const [currentIpfsHash, currentFileName, currentUnlockTimestamp, currentOwner, currentLockFee, currentIsUnlocked] = currentFileInfo;
+      const [currentIpfsHash, currentFileName, currentUnlockTimestamp, currentOwner, currentRecipient, currentLockFee, currentIsUnlocked] = currentFileInfo;
       
       if (!currentIpfsHash) {
         throw new Error('File not found on-chain');
@@ -187,27 +188,26 @@ export default function UnlockCapsule() {
         throw new Error(`File is still locked until ${currentUnlockTime.toLocaleString()}`);
       }
       
-             if (currentIsUnlocked) {
-         console.log('File already unlocked, proceeding to download...');
-       } else {
-         console.log('Unlocking file on blockchain...');
-         
-         // Call confirmUnlock directly (this handles the unlock with fee)
-         const unlockFee = ethers.parseEther("0.001");
-         console.log('Unlocking with fee:', ethers.formatEther(unlockFee));
-         
-         const unlockTx = await contract.confirmUnlock(bytes32FileId, { value: unlockFee });
-         const receipt = await unlockTx.wait();
-         console.log('Unlock confirmed on-chain');
-         
-         // Verify unlock was successful
-         const updatedFileInfo = await contract.getFileInfo(bytes32FileId);
-         const [, , , , , newIsUnlocked] = updatedFileInfo;
-         
-         if (!newIsUnlocked) {
-           throw new Error('File was not unlocked on-chain');
-         }
-       }
+      // Check if blockchain unlock is needed
+      if (!currentIsUnlocked) {
+        console.log('Unlocking file on blockchain...');
+        
+        // Call confirmUnlock directly - this will prompt user to sign transaction
+        const unlockFee = ethers.parseEther("0.001");
+        console.log('Unlocking with fee:', ethers.formatEther(unlockFee));
+        
+        const unlockTx = await contract.confirmUnlock(bytes32FileId, { 
+          value: unlockFee 
+        });
+        
+        console.log('Transaction sent:', unlockTx.hash);
+        console.log('Waiting for confirmation...');
+        
+        const receipt = await unlockTx.wait();
+        console.log('Unlock confirmed on-chain');
+      } else {
+        console.log('File already unlocked, proceeding to download...');
+      }
 
       // Step 3: Download from IPFS
       console.log('Downloading from IPFS hash:', currentIpfsHash);
@@ -228,7 +228,7 @@ export default function UnlockCapsule() {
       
       console.log('Decryption result:', decryptionResult);
       
-      // Handle the API response - it returns a JSON object, not ArrayBuffer
+      // Handle the API response
       let decryptedBase64;
       if (decryptionResult.success === false) {
         throw new Error(decryptionResult.error || 'Decryption failed');
@@ -269,7 +269,7 @@ export default function UnlockCapsule() {
       setResult({
         success: true,
         content: {
-          fileContent: decryptedBase64, // Use the base64 directly from API
+          fileContent: decryptedBase64,
           fileName: currentFileName,
           fileType: fileType,
           fileSize: fileSize,
@@ -491,29 +491,35 @@ export default function UnlockCapsule() {
                 </div>
                 <div className="text-sm text-gray-300 space-y-1">
                   <p><span className="text-white">File:</span> {capsuleMetadata.fileName}</p>
-                  <p><span className="text-white">Owner:</span> {truncateAddress(capsuleMetadata.owner)}</p>
+                  <p><span className="text-white">Creator:</span> {truncateAddress(capsuleMetadata.owner)}</p>
+                  <p><span className="text-white">Recipient:</span> {truncateAddress(capsuleMetadata.recipient)}</p>
                   <p><span className="text-white">Status:</span> {capsuleMetadata.status}</p>
                   <p><span className="text-white">Unlock Time:</span> {new Date(capsuleMetadata.unlockTimestamp).toLocaleString()}</p>
-                                     {!isUnlockable(capsuleMetadata.unlockTimestamp) && (
-                     <p className="text-yellow-300 font-medium">
-                       ⏱️ Unlocks in: {(() => {
-                         const timeDiff = new Date(capsuleMetadata.unlockTimestamp).getTime() - Date.now();
-                         const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                         const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                         const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                         
-                         if (days > 0) {
-                           return `${days} day${days > 1 ? 's' : ''}`;
-                         } else if (hours > 0) {
-                           return `${hours} hour${hours > 1 ? 's' : ''}`;
-                         } else if (minutes > 0) {
-                           return `${minutes} minute${minutes > 1 ? 's' : ''}`;
-                         } else {
-                           return 'less than a minute';
-                         }
-                       })()}
-                     </p>
-                   )}
+                  {capsuleMetadata.status === 'locked' && (
+                    <p className="text-yellow-300 font-medium">
+                      💰 Unlock Fee: 0.001 XTZ (transaction required)
+                    </p>
+                  )}
+                  {!isUnlockable(capsuleMetadata.unlockTimestamp) && (
+                    <p className="text-yellow-300 font-medium">
+                      ⏱️ Unlocks in: {(() => {
+                        const timeDiff = new Date(capsuleMetadata.unlockTimestamp).getTime() - Date.now();
+                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        if (days > 0) {
+                          return `${days} day${days > 1 ? 's' : ''}`;
+                        } else if (hours > 0) {
+                          return `${hours} hour${hours > 1 ? 's' : ''}`;
+                        } else if (minutes > 0) {
+                          return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+                        } else {
+                          return 'less than a minute';
+                        }
+                      })()}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -582,7 +588,7 @@ export default function UnlockCapsule() {
               {unlocking ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Unlocking Capsule...
+                  Unlocking Time Capsule...
                 </>
               ) : !isConnected ? (
                 'Connect Wallet First'

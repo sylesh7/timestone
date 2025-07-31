@@ -9,7 +9,7 @@ import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/
 import { useAccount } from 'wagmi';
 
 interface Capsule {
-  fileId: string; // Fixed: was 'fileid'
+  fileId: string;
   fileName: string;
   metadata: {
     fileName: string;
@@ -49,36 +49,47 @@ export default function Dashboard() {
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const contract = new ethers.Contract(TIME_ORACLE_FILE_LOCKER_ADDRESS, TIME_ORACLE_FILE_LOCKER_ABI, provider);
       
-      // Get all fileIds for the connected user
-      const fileIds = await contract.getUserFiles(address);
+      // Get all files for the user (both created and received)
+      const allFileIds = await contract.getAllUserFiles(address);
       
       // Get detailed info for each file
-      const capsulesData = await Promise.all(fileIds.map(async (fileId: string) => {
-        const fileInfo = await contract.getFileInfo(fileId);
-        const [ipfsHash, fileName, unlockTimestamp, owner, lockFee, isUnlocked] = fileInfo;
-        
-        return {
-          fileId, // Fixed: consistent naming
-          fileName,
-          metadata: {
+      const capsulesData = await Promise.all(allFileIds.map(async (fileId: string) => {
+        try {
+          const fileInfo = await contract.getFileInfo(fileId);
+          const [ipfsHash, fileName, unlockTimestamp, owner, recipient, lockFee, isUnlocked] = fileInfo;
+          
+          // Determine role based on current user's address
+          const isCreator = address.toLowerCase() === owner.toLowerCase();
+          const isRecipient = address.toLowerCase() === recipient.toLowerCase();
+          
+          return {
+            fileId,
             fileName,
-            unlockTimestamp: new Date(Number(unlockTimestamp) * 1000).toISOString(),
-            creatorAddress: owner,
-            recipientAddress: address,
-            status: isUnlocked ? 'unlocked' : 'locked',
-            createdAt: new Date().toISOString(), // Contract doesn't store creation time
-            message: ''
-          },
-          canUnlock: !isUnlocked && new Date(Number(unlockTimestamp) * 1000) <= new Date(),
-          role: address.toLowerCase() === owner.toLowerCase() ? 'creator' : 'recipient',
-          pinata: {
-            ipfsHash,
-            gateway: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
-          }
-        };
+            metadata: {
+              fileName,
+              unlockTimestamp: new Date(Number(unlockTimestamp) * 1000).toISOString(),
+              creatorAddress: owner,
+              recipientAddress: recipient,
+              status: isUnlocked ? 'unlocked' : 'locked',
+              createdAt: new Date().toISOString(), // Contract doesn't store creation time
+              message: ''
+            },
+            canUnlock: !isUnlocked && new Date(Number(unlockTimestamp) * 1000) <= new Date(),
+            role: isCreator ? 'creator' : 'recipient',
+            pinata: {
+              ipfsHash,
+              gateway: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
+            }
+          };
+        } catch (error) {
+          console.error(`Error loading file ${fileId}:`, error);
+          return null;
+        }
       }));
       
-      setCapsules(capsulesData);
+      // Filter out any null results from failed loads
+      const validCapsules = capsulesData.filter(capsule => capsule !== null);
+      setCapsules(validCapsules);
     } catch (error) {
       console.error('Failed to load capsules from contract:', error);
       setCapsules([]);
@@ -93,23 +104,27 @@ export default function Dashboard() {
       const totalCapsules = capsules.length;
       const sealedCapsules = capsules.filter(c => c.metadata.status === 'locked').length;
       const unlockedCapsules = capsules.filter(c => c.metadata.status === 'unlocked').length;
+      const createdCapsules = capsules.filter(c => c.role === 'creator').length;
+      const receivedCapsules = capsules.filter(c => c.role === 'recipient').length;
       
-      // Fixed: Removed reference to undefined 'data' variable
       setStats({
         totalCapsules,
         sealedCapsules,
         unlockedCapsules,
+        createdCapsules,
+        receivedCapsules,
         encryptionAlgorithm: 'Kyber-768-Simulation',
         serverStatus: 'online',
         blockchain: 'Etherlink Testnet'
       });
     } catch (error) {
       console.error('Failed to load stats:', error);
-      // Set fallback stats on error
       setStats({
         totalCapsules: 0,
         sealedCapsules: 0,
         unlockedCapsules: 0,
+        createdCapsules: 0,
+        receivedCapsules: 0,
         encryptionAlgorithm: 'Kyber-768-Simulation',
         serverStatus: 'error',
         error: 'Connection failed'
@@ -187,12 +202,17 @@ export default function Dashboard() {
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Time Capsule Dashboard</h1>
             <p className="text-gray-300">Manage and view your encrypted time capsules</p>
+            {address && (
+              <p className="text-sm text-gray-400 mt-2">
+                Connected: <span className="font-mono text-purple-300">{address}</span>
+              </p>
+            )}
           </div>
 
           {/* Stats Section */}
           {loadingStats ? (
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              {[1, 2, 3].map((i) => (
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 animate-pulse">
                   <div className="h-4 bg-gray-600 rounded mb-2"></div>
                   <div className="h-8 bg-gray-600 rounded"></div>
@@ -200,7 +220,7 @@ export default function Dashboard() {
               ))}
             </div>
           ) : stats ? (
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
               <div className="bg-purple-900/20 rounded-lg p-6 border border-purple-500/30">
                 <h3 className="text-lg font-semibold text-white mb-2">Total Capsules</h3>
                 <p className="text-3xl font-bold text-purple-400">{stats.totalCapsules || 0}</p>
@@ -208,13 +228,19 @@ export default function Dashboard() {
                   <p className="text-xs text-yellow-400 mt-1">⚠️ {stats.error}</p>
                 )}
               </div>
-              <div className="bg-yellow-900/20 rounded-lg p-6 border border-yellow-500/30">
-                <h3 className="text-lg font-semibold text-white mb-2">Sealed Capsules</h3>
-                <p className="text-3xl font-bold text-yellow-400">{stats.sealedCapsules || 0}</p>
+              <div className="bg-blue-900/20 rounded-lg p-6 border border-blue-500/30">
+                <h3 className="text-lg font-semibold text-white mb-2">Created by You</h3>
+                <p className="text-3xl font-bold text-blue-400">{stats.createdCapsules || 0}</p>
+                <p className="text-xs text-gray-400 mt-1">Files you sent</p>
               </div>
               <div className="bg-green-900/20 rounded-lg p-6 border border-green-500/30">
-                <h3 className="text-lg font-semibold text-white mb-2">Unlocked Capsules</h3>
-                <p className="text-3xl font-bold text-green-400">{stats.unlockedCapsules || 0}</p>
+                <h3 className="text-lg font-semibold text-white mb-2">Sent to You</h3>
+                <p className="text-3xl font-bold text-green-400">{stats.receivedCapsules || 0}</p>
+                <p className="text-xs text-gray-400 mt-1">Files you received</p>
+              </div>
+              <div className="bg-yellow-900/20 rounded-lg p-6 border border-yellow-500/30">
+                <h3 className="text-lg font-semibold text-white mb-2">Sealed</h3>
+                <p className="text-3xl font-bold text-yellow-400">{stats.sealedCapsules || 0}</p>
                 <div className="text-xs text-gray-400 mt-1">
                   Server: <span className={stats.serverStatus === 'online' ? 'text-green-400' : 'text-red-400'}>
                     {stats.serverStatus || 'unknown'}
@@ -318,22 +344,19 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Load Capsules by Address */}
+          {/* Load Capsules Section */}
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-white mb-4">Load Capsules by Address</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Your Time Capsules</h3>
             <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30">
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Enter your wallet address or identifier to load your capsules:
-              </label>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={address || ''}
-                  onChange={(e) => {}}
-                  className="flex-1 px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
-                  placeholder="0x1234...abcd or your identifier"
-                  onKeyPress={(e) => e.key === 'Enter' && loadUserCapsules()}
-                />
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-gray-300 mb-1">
+                    {address ? `Loading capsules for: ${address}` : 'Connect your wallet to load capsules'}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    This will show all capsules you created or received
+                  </p>
+                </div>
                 <button
                   onClick={loadUserCapsules}
                   disabled={!isConnected || loading}
@@ -345,7 +368,7 @@ export default function Dashboard() {
                       Loading...
                     </>
                   ) : (
-                    'Load Capsules'
+                    'Refresh Capsules'
                   )}
                 </button>
               </div>
@@ -357,21 +380,21 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">
-                  Capsules for {address} ({capsules.length})
+                  Your Capsules ({capsules.length})
                 </h2>
-                <button
-                  onClick={() => {
-                    setCapsules([]);
-                  }}
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
-                >
-                  Clear Results
-                </button>
+                <div className="flex gap-2 text-sm">
+                  <span className="bg-blue-900/50 text-blue-300 px-3 py-1 rounded-full">
+                    Created: {capsules.filter(c => c.role === 'creator').length}
+                  </span>
+                  <span className="bg-green-900/50 text-green-300 px-3 py-1 rounded-full">
+                    Received: {capsules.filter(c => c.role === 'recipient').length}
+                  </span>
+                </div>
               </div>
               
               {capsules.map((capsule) => (
                 <div
-                  key={capsule.fileId} // Fixed: use fileId consistently
+                  key={capsule.fileId}
                   className="bg-black/30 rounded-lg p-6 border border-white/10 hover:border-white/20 transition-colors"
                 >
                   <div className="flex items-start justify-between">
@@ -408,12 +431,12 @@ export default function Dashboard() {
                           <p className="text-gray-300">
                             <User className="w-4 h-4 inline mr-2" />
                             <span className="text-white font-medium">Creator:</span> 
-                            <span className="font-mono text-xs ml-1">{capsule.metadata.creatorAddress}</span>
+                            <span className="font-mono text-xs ml-1 break-all">{capsule.metadata.creatorAddress}</span>
                           </p>
                           <p className="text-gray-300">
                             <User className="w-4 h-4 inline mr-2" />
                             <span className="text-white font-medium">Recipient:</span> 
-                            <span className="font-mono text-xs ml-1">{capsule.metadata.recipientAddress}</span>
+                            <span className="font-mono text-xs ml-1 break-all">{capsule.metadata.recipientAddress}</span>
                           </p>
                         </div>
                         <div className="space-y-1">
@@ -454,7 +477,7 @@ export default function Dashboard() {
                     <div className="ml-6 flex flex-col gap-2">
                       {capsule.canUnlock ? (
                         <Link
-                          href={`/unlock?capsuleId=${capsule.fileId}`} // Fixed: use fileId
+                          href={`/unlock?capsuleId=${capsule.fileId}`}
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
                         >
                           <Unlock className="w-4 h-4" />
@@ -468,7 +491,7 @@ export default function Dashboard() {
                       )}
                       
                       <Link
-                        href={`/unlock?capsuleId=${capsule.fileId}`} // Fixed: use fileId
+                        href={`/unlock?capsuleId=${capsule.fileId}`}
                         className="border border-purple-500/50 text-purple-300 hover:bg-purple-500/20 px-4 py-2 rounded-lg text-sm transition-colors text-center"
                       >
                         <Eye className="w-4 h-4 inline mr-1" />

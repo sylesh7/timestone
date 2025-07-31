@@ -1,5 +1,5 @@
 // TimeOracleFileLocker contract configuration
-export const TIME_ORACLE_FILE_LOCKER_ADDRESS = "0x5e46e891F391E1cEE550D0F730dA8C685f5F3004";
+export const TIME_ORACLE_FILE_LOCKER_ADDRESS = "0xFa4B9C9e2b776b7D7422718B6A31eeBA949B1952";
 
 export const TIME_ORACLE_FILE_LOCKER_ABI = [
   {
@@ -15,6 +15,12 @@ export const TIME_ORACLE_FILE_LOCKER_ABI = [
         "indexed": true,
         "internalType": "address",
         "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
         "type": "address"
       },
       {
@@ -133,6 +139,11 @@ export const TIME_ORACLE_FILE_LOCKER_ABI = [
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "lockFee",
         "type": "uint256"
@@ -168,6 +179,44 @@ export const TIME_ORACLE_FILE_LOCKER_ABI = [
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "name": "getRecipientFiles",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "getAllUserFiles",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
         "name": "ipfsHash",
         "type": "string"
@@ -181,6 +230,11 @@ export const TIME_ORACLE_FILE_LOCKER_ABI = [
         "internalType": "uint256",
         "name": "unlockTimestamp",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
       }
     ],
     "name": "lockFile",
