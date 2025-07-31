@@ -52,14 +52,60 @@ export class TimestoneAPI {
   }
 
   static async decryptData(encryptionResult: any, privateKey: string) {
-    const response = await fetch(`${API_BASE_URL}/api/encrypt/decrypt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ encryptionResult, privateKey }),
-    });
-    return this.handleResponse(response);
+    console.log('=== DECRYPT DATA DEBUG ===');
+    console.log('Input type:', typeof encryptionResult);
+    console.log('Input constructor:', encryptionResult?.constructor?.name);
+    console.log('Private key length:', privateKey.length);
+    
+    // Validate inputs
+    if (!encryptionResult) {
+      throw new Error('Encryption result is null or undefined');
+    }
+    
+    if (!privateKey || privateKey.trim().length === 0) {
+      throw new Error('Private key is null, undefined, or empty');
+    }
+    
+    // The encryptionResult should now be the proper object from the capsule data
+    const requestBody = { 
+      encryptedData: encryptionResult, 
+      privateKey: privateKey.trim()
+    };
+    
+    console.log('Sending decrypt request to API...');
+    console.log('Request body keys:', Object.keys(requestBody));
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/encrypt/decrypt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Decrypt API error:', errorText);
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(`Decryption failed: ${errorJson.error || errorText}`);
+        } catch (parseError) {
+          throw new Error(`Decryption failed: ${response.status} - ${errorText}`);
+        }
+      }
+      
+      const result = await response.json();
+      console.log('✅ Decrypt API response received');
+      console.log('=== END DECRYPT DEBUG ===');
+      
+      return result;
+    } catch (error: any) {
+      console.error('❌ Decrypt request failed:', error);
+      console.log('=== END DECRYPT DEBUG ===');
+      throw error;
+    }
   }
 
   // Pinata/IPFS endpoints
@@ -83,11 +129,39 @@ export class TimestoneAPI {
   }
 
   static async downloadFromPinata(ipfsHash: string) {
-    const response = await fetch(`${API_BASE_URL}/api/pinata/download/${ipfsHash}`);
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.statusText}`);
+    console.log('Downloading from IPFS hash:', ipfsHash);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/pinata/download/${ipfsHash}`);
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} - ${response.statusText}`);
+      }
+      const buffer = await response.arrayBuffer();
+      console.log('✅ Downloaded buffer size:', buffer.byteLength);
+      
+      // Try to parse as JSON first (time capsule data)
+      try {
+        const text = new TextDecoder().decode(buffer);
+        const capsuleData = JSON.parse(text);
+        console.log('✅ Parsed as JSON capsule data');
+        console.log('Capsule data keys:', Object.keys(capsuleData));
+        
+        // Return the encryptedContent from the capsule data
+        if (capsuleData.encryptedContent) {
+          console.log('✅ Found encryptedContent in capsule data');
+          return capsuleData.encryptedContent;
+        } else {
+          console.log('❌ No encryptedContent found in capsule data');
+          throw new Error('No encrypted content found in capsule data');
+        }
+      } catch (parseError) {
+        console.log('❌ Failed to parse as JSON, treating as raw data');
+        // If not JSON, return the raw buffer
+        return buffer;
+      }
+    } catch (error) {
+      console.error('❌ IPFS download failed:', error);
+      throw error;
     }
-    return response.arrayBuffer();
   }
 
   // Time Capsule endpoints
@@ -207,34 +281,68 @@ export class TimestoneAPI {
     return '📁';
   }
 
-  // Private Key Management
-  static savePrivateKey(capsuleId: string, privateKey: string): void {
+  // UPDATED: Private Key Management with better interface
+  static storePrivateKey(capsuleId: string, privateKey: string, metadata?: any): void {
     try {
-      localStorage.setItem(`timestone_capsule_${capsuleId}`, JSON.stringify(privateKey));
-      console.log(`🔑 Private key saved for capsule: ${capsuleId}`);
+      const capsuleData = {
+        capsuleId,
+        privateKey,
+        metadata,
+        createdAt: new Date().toISOString()
+      };
+      localStorage.setItem(`timestone_capsule_${capsuleId}`, JSON.stringify(capsuleData));
+      console.log(`🔑 Private key stored for capsule: ${capsuleId}`);
     } catch (error) {
-      console.error('Failed to save private key:', error);
+      console.error('Failed to store private key:', error);
     }
   }
 
   static getPrivateKey(capsuleId: string): string | null {
     try {
       const stored = localStorage.getItem(`timestone_capsule_${capsuleId}`);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      
+      const capsuleData = JSON.parse(stored);
+      // Handle both old format (direct string) and new format (object)
+      if (typeof capsuleData === 'string') {
+        return capsuleData;
+      } else if (capsuleData && capsuleData.privateKey) {
+        return capsuleData.privateKey;
+      }
+      return null;
     } catch (error) {
       console.error('Failed to retrieve private key:', error);
       return null;
     }
   }
 
-  static getAllStoredCapsules(): Array<{capsuleId: string, hasPrivateKey: boolean}> {
+  static getAllStoredCapsules(): Array<{capsuleId: string, metadata?: any, createdAt?: string}> {
     try {
-      const capsules: Array<{capsuleId: string, hasPrivateKey: boolean}> = [];
+      const capsules: Array<{capsuleId: string, metadata?: any, createdAt?: string}> = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('timestone_capsule_')) {
           const capsuleId = key.replace('timestone_capsule_', '');
-          capsules.push({ capsuleId, hasPrivateKey: true });
+          try {
+            const stored = localStorage.getItem(key);
+            if (stored) {
+              const capsuleData = JSON.parse(stored);
+              if (typeof capsuleData === 'string') {
+                // Old format
+                capsules.push({ capsuleId });
+              } else {
+                // New format
+                capsules.push({
+                  capsuleId,
+                  metadata: capsuleData.metadata,
+                  createdAt: capsuleData.createdAt
+                });
+              }
+            }
+          } catch (e) {
+            // Skip invalid entries
+            console.warn(`Invalid capsule data for ${capsuleId}`);
+          }
         }
       }
       return capsules;
@@ -251,6 +359,11 @@ export class TimestoneAPI {
     } catch (error) {
       console.error('Failed to remove private key:', error);
     }
+  }
+
+  // LEGACY: Keep old method names for backward compatibility
+  static savePrivateKey(capsuleId: string, privateKey: string): void {
+    this.storePrivateKey(capsuleId, privateKey);
   }
 
   static formatFileSize(bytes: number): string {
