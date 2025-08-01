@@ -416,11 +416,17 @@ export default function Dashboard() {
                               {capsule.role === 'creator' ? '📤 Created by you' : '📥 Sent to you'}
                             </span>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              capsule.canUnlock 
+                              capsule.metadata.status === 'unlocked'
+                                ? 'bg-purple-900/50 text-purple-300 border border-purple-500/30'
+                                : capsule.canUnlock 
                                 ? 'bg-green-900/50 text-green-300 border border-green-500/30' 
                                 : 'bg-yellow-900/50 text-yellow-300 border border-yellow-500/30'
                             }`}>
-                              {capsule.canUnlock ? '🔓 Ready to unlock' : '🔒 Time locked'}
+                              {capsule.metadata.status === 'unlocked' 
+                                ? '✅ Unlocked' 
+                                : capsule.canUnlock 
+                                ? '🔓 Ready to unlock' 
+                                : '🔒 Time locked'}
                             </span>
                           </div>
                         </div>
@@ -475,7 +481,12 @@ export default function Dashboard() {
                     </div>
 
                     <div className="ml-6 flex flex-col gap-2">
-                      {capsule.canUnlock ? (
+                      {capsule.metadata.status === 'unlocked' ? (
+                        <div className="bg-purple-900/30 text-purple-300 px-4 py-2 rounded-lg text-sm text-center border border-purple-500/30">
+                          <CheckCircle className="w-4 h-4 inline mr-1" />
+                          Already Unlocked
+                        </div>
+                      ) : capsule.canUnlock ? (
                         <Link
                           href={`/unlock?capsuleId=${capsule.fileId}`}
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
@@ -495,7 +506,7 @@ export default function Dashboard() {
                         className="border border-purple-500/50 text-purple-300 hover:bg-purple-500/20 px-4 py-2 rounded-lg text-sm transition-colors text-center"
                       >
                         <Eye className="w-4 h-4 inline mr-1" />
-                        View Details
+                        {capsule.metadata.status === 'unlocked' ? 'View Contents' : 'View Details'}
                       </Link>
                     </div>
                   </div>
