@@ -10,12 +10,19 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.8",
+    "@types/three": "^0.178.1",
     "axios": "^1.11.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "ethers": "^6.15.0",
+    "framer-motion": "^12.23.12",
     "lucide-react": "^0.526.0",
     "next": "15.4.4",
+    "postprocessing": "^6.37.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "tailwind-merge": "^3.3.1",
+    "three": "^0.179.0",
     "wagmi": "^2.16.1"
   },
   "devDependencies": {

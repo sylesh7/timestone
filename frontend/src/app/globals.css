@@ -24,3 +24,80 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom animations for Magic UI components */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shiny-text {
+  0%, 90%, 100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+  }
+  30%, 60% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+  }
+}
+
+@keyframes shimmer-slide {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+  }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+  }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+  }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+  }
+}
+
+@keyframes grid {
+  0% {
+    transform: translateY(-50%);
+    filter: brightness(1) drop-shadow(0 0 10px #00ff88);
+  }
+  50% {
+    filter: brightness(1.2) drop-shadow(0 0 20px #00ff88);
+  }
+  100% {
+    transform: translateY(0);
+    filter: brightness(1) drop-shadow(0 0 10px #00ff88);
+  }
+}
+
+.animate-gradient {
+  animation: gradient 6s ease infinite;
+}
+
+.animate-shiny-text {
+  animation: shiny-text 8s ease-in-out infinite;
+}
+
+.animate-shimmer-slide {
+  animation: shimmer-slide var(--speed) linear infinite;
+}
+
+.animate-spin-around {
+  animation: spin-around var(--speed) linear infinite;
+}
+
+.animate-grid {
+  animation: grid 15s linear infinite;
+}
