@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.2.8",
     "axios": "^1.11.0",
     "ethers": "^6.15.0",
     "lucide-react": "^0.526.0",
