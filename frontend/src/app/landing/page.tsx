@@ -1,6 +1,6 @@
 'use client';
 import { DecorativeBeam } from "@/components/ui/decorative-beam";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Clock, Shield, Database, Zap, ArrowRight, CheckCircle, Play, Users, Star, Gift, Upload, Link as LinkIcon, Unlock } from 'lucide-react';
@@ -12,7 +12,8 @@ import { ShimmerButton } from '@/components/ui/shimmer-button';
 import EncryptedButton from '@/components/ui/encrypted-button';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import DecryptedText from '@/components/ui/decrypted-text';
-import Hyperspeed from '@/components/Hyperspeed';
+import ContinuousHyperspeed from '@/components/ContinuousHyperspeed';
+import IsolatedTitleComponent from '@/components/IsolatedTitleComponent';
 import { MagicCard } from '@/components/ui/magic-card';
 import TextType from '@/components/ui/text-type';
 import { AnimatedBeam } from '@/components/ui/animated-beam';
@@ -23,62 +24,22 @@ import { RainbowButton } from '@/components/ui/rainbow-button';
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
-  const [decryptKey, setDecryptKey] = useState(0);
 
   useEffect(() => {
     setMounted(true);
-    
-    // Set up interval to trigger decryption every 7 seconds
-    const interval = setInterval(() => {
-      setDecryptKey(prev => prev + 1);
-    }, 7000);
-
-    return () => clearInterval(interval);
   }, []);
 
   if (!mounted) return null;
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
-      {/* TimeStone Title - Top Left */}
-      <div className="fixed top-6 left-6 z-50">
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-4xl font-bold tracking-wider text-green-400"
-          style={{ fontFamily: '"ASROG GENOS", serif' }}
-        >
-          <DecryptedText
-            key={decryptKey}
-            text="TimeStone"
-            animateOn="mount"
-            speed={100}
-            maxIterations={8}
-            sequential={true}
-            revealDirection="start"
-            className="text-green-400"
-            delay={0}
-          />
-        </motion.div>
-      </div>
+      {/* TimeStone Title - Top Left - Completely Isolated */}
+      <IsolatedTitleComponent />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Animated Background */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-full h-4/5 transform -translate-y-8">
-            <Hyperspeed
-              effectOptions={{
-                speedUp: 1.5,
-                fov: 120,
-                carLightsFade: 0.6,
-                totalSideLightSticks: 30,
-                lightPairsPerRoadWay: 50,
-              }}
-            />
-          </div>
-        </div>
+        <ContinuousHyperspeed />
         
         <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-green-950/20 to-black/40" />
         
