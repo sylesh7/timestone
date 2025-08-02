@@ -200,30 +200,33 @@ export default function Dashboard() {
       <style jsx>{`
         .dashboard-card {
           width: 100%;
-          background-color: #1a1a1a;
+          background: transparent;
           border-radius: 20px;
-          transition: all .3s;
-          padding: 3px;
+          transition: all 0.3s;
+          padding: 0.25px;
+          border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .dashboard-card:hover {
+          background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
+          box-shadow: 0px 0px 0px 0px rgba(0, 255, 117, 0.30);
+          border: none;
         }
 
         .dashboard-card-inner {
           width: 100%;
           height: 100%;
           background-color: #1a1a1a;
-          border-radius: 17px;
-          transition: all .2s;
+          border-radius: 18px;
+          transition: all 0.2s;
         }
 
         .dashboard-card-inner:hover {
-          transform: scale(0.99);
-          border-radius: 17px;
-        }
-
-        .dashboard-card:hover {
-          background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
-          box-shadow: 0px 0px 30px 1px rgba(0, 255, 117, 0.30);
+          transform: scale(0.98);
+          border-radius: 20px;
         }
       `}</style>
+
       {/* Vertical Dock with Gooey Effects */}
       <VerticalDock 
         items={[
@@ -264,9 +267,10 @@ export default function Dashboard() {
         </div>
 
         <div className="relative">
-          {/* Gradient Border Container */}
+          {/* Main Container */}
           <div className="dashboard-card">
-            <div className="dashboard-card-inner bg-black/40 backdrop-blur-lg rounded-xl border border-gray-600/30 p-8 relative">
+            <div className="dashboard-card-inner">
+              <div className="p-8 relative">
               <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-white mb-2">Time Capsule Dashboard</h1>
                 <p className="text-gray-300 text-lg">Manage and view your encrypted time capsules</p>
@@ -415,6 +419,7 @@ export default function Dashboard() {
               </ShinyButton>
             </Link>
           </div>
+            </div>
             </div>
           </div>
         </div>
