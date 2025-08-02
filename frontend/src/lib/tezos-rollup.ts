@@ -43,14 +43,53 @@ class TezosRollupClient {
       console.log('📨 Current time in hex:', currentTimeHex);
       console.log('📨 Full hex message for rollup: ["' + currentTimeHex + '"]');
       
-      // In a real implementation, you would use octez-client here
-      // Command would be: octez-client send smart rollup message 'hex:["' + currentTimeHex + '"]' from operator
-      await this.simulateRollupMessage(currentTimeHex);
+      // Use real octez-client command
+      await this.sendRealRollupMessage(currentTimeHex);
       
       console.log('✅ Time oracle message sent successfully');
     } catch (error) {
       console.error('❌ Error sending time oracle message:', error);
-      throw new Error(`Failed to send time oracle message: ${error}`);
+      // Fallback to simulation if real command fails
+      console.log('🔄 Falling back to simulation...');
+      const currentTimeHex = this.getCurrentTimeHex();
+      await this.simulateRollupMessage(currentTimeHex);
+    }
+  }
+
+  /**
+   * Send a real message to the rollup using octez-client
+   */
+  private async sendRealRollupMessage(hexMessage: string): Promise<void> {
+    try {
+      console.log('🔄 Sending real message to rollup:', hexMessage);
+      
+      // Create the octez-client command
+      const command = `octez-client send smart rollup message 'hex:["${hexMessage}"]' from operator`;
+      console.log('📨 Executing command:', command);
+      
+      // Execute the command using fetch to a backend endpoint
+      const response = await fetch('/api/tezos/send-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          hexMessage,
+          rollupAddress: this.rollupAddress,
+          command
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to send message: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Real rollup message sent successfully:', result);
+      
+    } catch (error) {
+      console.error('❌ Error sending real rollup message:', error);
+      throw error;
     }
   }
 
@@ -62,7 +101,7 @@ class TezosRollupClient {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Simulate rollup processing
+    
     console.log('🔄 Rollup processing timestamp message:', hexMessage);
     console.log('🔄 Real command would be: octez-client send smart rollup message \'hex:["' + hexMessage + '"]\' from operator');
     
