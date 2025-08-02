@@ -359,20 +359,20 @@ export default function VerticalDock({
         style={{ width, scrollbarWidth: "none" }}
         className="my-2 flex max-h-full items-center"
       >
-        {/* Green Glow Background Effect - Mild */}
+        {/* Green Glow Border Effect Only */}
         <div 
           className="fixed left-4 top-1/2 -translate-y-1/2 rounded-2xl z-40"
           style={{ 
-            width: panelWidth * 1.2,
-            height: '160px',
-            background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.1) 40%, rgba(34, 197, 94, 0.05) 70%, transparent 100%)',
+            width: panelWidth,
+            height: '180px',
+            background: 'transparent',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
             boxShadow: `
-              0 0 15px rgba(34, 197, 94, 0.2),
-              0 0 30px rgba(34, 197, 94, 0.15),
-              0 0 50px rgba(34, 197, 94, 0.1)
+              0 0 8px rgba(34, 197, 94, 0.4),
+              0 0 16px rgba(34, 197, 94, 0.2),
+              inset 0 0 8px rgba(34, 197, 94, 0.1)
             `,
-            filter: 'blur(6px)',
-            transform: 'scale(1.1)',
+            filter: 'blur(0.5px)',
           }}
         />
         

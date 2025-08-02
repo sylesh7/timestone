@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
 import { useAccount } from 'wagmi';
 import { ShinyButton } from '@/components/ui/shiny-button';
-import { AnimatedRainbowButton } from '@/components/ui/animated-rainbow-button';
+import EncryptedButton from '@/components/ui/encrypted-button';
 import VerticalDock from '@/components/ui/vertical-dock';
 
 interface Capsule {
@@ -197,6 +197,33 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black p-6">
+      <style jsx>{`
+        .dashboard-card {
+          width: 100%;
+          background-color: #1a1a1a;
+          border-radius: 20px;
+          transition: all .3s;
+          padding: 3px;
+        }
+
+        .dashboard-card-inner {
+          width: 100%;
+          height: 100%;
+          background-color: #1a1a1a;
+          border-radius: 17px;
+          transition: all .2s;
+        }
+
+        .dashboard-card-inner:hover {
+          transform: scale(0.99);
+          border-radius: 17px;
+        }
+
+        .dashboard-card:hover {
+          background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
+          box-shadow: 0px 0px 30px 1px rgba(0, 255, 117, 0.30);
+        }
+      `}</style>
       {/* Vertical Dock with Gooey Effects */}
       <VerticalDock 
         items={[
@@ -236,16 +263,19 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        <div className="bg-black/40 backdrop-blur-lg rounded-xl border border-gray-600/30 p-8 shadow-2xl shadow-green-500/20 relative before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-green-500/10 before:via-emerald-500/5 before:to-green-500/10 before:blur-xl before:-z-10">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Time Capsule Dashboard</h1>
-            <p className="text-gray-300 text-lg">Manage and view your encrypted time capsules</p>
-            {address && (
-              <p className="text-sm text-gray-400 mt-2">
-                Connected: <span className="font-mono text-green-300">{address}</span>
-              </p>
-            )}
-          </div>
+        <div className="relative">
+          {/* Gradient Border Container */}
+          <div className="dashboard-card">
+            <div className="dashboard-card-inner bg-black/40 backdrop-blur-lg rounded-xl border border-gray-600/30 p-8 relative">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2">Time Capsule Dashboard</h1>
+                <p className="text-gray-300 text-lg">Manage and view your encrypted time capsules</p>
+                {address && (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Connected: <span className="font-mono text-green-300">{address}</span>
+                  </p>
+                )}
+              </div>
 
           {/* Stats Section */}
           {loadingStats ? (
@@ -371,9 +401,9 @@ export default function Dashboard() {
           {/* Action Buttons */}
           <div className="flex gap-4 justify-center mt-8 pt-8 border-t border-gray-600">
             <Link href="/create">
-              <AnimatedRainbowButton className="font-semibold px-8">
+              <EncryptedButton className="font-semibold">
                 Create New Capsule
-              </AnimatedRainbowButton>
+              </EncryptedButton>
             </Link>
             <Link href="/unlock">
               <ShinyButton
@@ -384,6 +414,8 @@ export default function Dashboard() {
                 Unlock Capsule
               </ShinyButton>
             </Link>
+          </div>
+            </div>
           </div>
         </div>
       </div>
