@@ -8,9 +8,13 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'asrog': ['"ASROG GENOS"', 'serif'],
+      },
       animation: {
         shimmer: "shimmer 2s linear infinite",
         rainbow: "rainbow 2s linear infinite",
+        shine: "shine 5s linear infinite",
       },
       keyframes: {
         shimmer: {
@@ -30,6 +34,14 @@ export default {
           },
           "100%": {
             "background-position": "0% 50%",
+          },
+        },
+        shine: {
+          "0%": {
+            "background-position": "100%",
+          },
+          "100%": {
+            "background-position": "-100%",
           },
         },
       },

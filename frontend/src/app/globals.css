@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* ASROG GENOS Font */
+@font-face {
+  font-family: 'ASROG GENOS';
+  src: url('/fonts/ASROG GENOStrial.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ASROG GENOS';
+  src: url('/fonts/ASROG GENOStrial.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

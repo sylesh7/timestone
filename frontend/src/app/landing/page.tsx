@@ -23,15 +23,46 @@ import { RainbowButton } from '@/components/ui/rainbow-button';
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
+  const [decryptKey, setDecryptKey] = useState(0);
 
   useEffect(() => {
     setMounted(true);
+    
+    // Set up interval to trigger decryption every 7 seconds
+    const interval = setInterval(() => {
+      setDecryptKey(prev => prev + 1);
+    }, 7000);
+
+    return () => clearInterval(interval);
   }, []);
 
   if (!mounted) return null;
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
+      {/* TimeStone Title - Top Left */}
+      <div className="fixed top-6 left-6 z-50">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="text-4xl font-bold tracking-wider text-green-400"
+          style={{ fontFamily: '"ASROG GENOS", serif' }}
+        >
+          <DecryptedText
+            key={decryptKey}
+            text="TimeStone"
+            animateOn="mount"
+            speed={100}
+            maxIterations={8}
+            sequential={true}
+            revealDirection="start"
+            className="text-green-400"
+            delay={0}
+          />
+        </motion.div>
+      </div>
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Animated Background */}
