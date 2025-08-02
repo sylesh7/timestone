@@ -188,23 +188,23 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+    <div className="min-h-screen bg-black p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-8">
-          <Link href="/" className="flex items-center text-gray-300 hover:text-white transition-colors">
+          <Link href="/" className="flex items-center text-gray-300 hover:text-green-400 transition-colors">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Home
           </Link>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+        <div className="bg-black/60 backdrop-blur-lg rounded-xl p-8 border border-green-500/20">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Time Capsule Dashboard</h1>
             <p className="text-gray-300">Manage and view your encrypted time capsules</p>
             {address && (
               <p className="text-sm text-gray-400 mt-2">
-                Connected: <span className="font-mono text-purple-300">{address}</span>
+                Connected: <span className="font-mono text-green-300">{address}</span>
               </p>
             )}
           </div>
@@ -221,16 +221,16 @@ export default function Dashboard() {
             </div>
           ) : stats ? (
             <div className="grid md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-purple-900/20 rounded-lg p-6 border border-purple-500/30">
+              <div className="bg-green-900/20 rounded-lg p-6 border border-green-500/30">
                 <h3 className="text-lg font-semibold text-white mb-2">Total Capsules</h3>
-                <p className="text-3xl font-bold text-purple-400">{stats.totalCapsules || 0}</p>
+                <p className="text-3xl font-bold text-green-400">{stats.totalCapsules || 0}</p>
                 {stats.error && (
                   <p className="text-xs text-yellow-400 mt-1">⚠️ {stats.error}</p>
                 )}
               </div>
-              <div className="bg-blue-900/20 rounded-lg p-6 border border-blue-500/30">
+              <div className="bg-green-900/20 rounded-lg p-6 border border-green-500/30">
                 <h3 className="text-lg font-semibold text-white mb-2">Created by You</h3>
-                <p className="text-3xl font-bold text-blue-400">{stats.createdCapsules || 0}</p>
+                <p className="text-3xl font-bold text-green-400">{stats.createdCapsules || 0}</p>
                 <p className="text-xs text-gray-400 mt-1">Files you sent</p>
               </div>
               <div className="bg-green-900/20 rounded-lg p-6 border border-green-500/30">
@@ -238,9 +238,9 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-green-400">{stats.receivedCapsules || 0}</p>
                 <p className="text-xs text-gray-400 mt-1">Files you received</p>
               </div>
-              <div className="bg-yellow-900/20 rounded-lg p-6 border border-yellow-500/30">
+              <div className="bg-green-900/20 rounded-lg p-6 border border-green-500/30">
                 <h3 className="text-lg font-semibold text-white mb-2">Sealed</h3>
-                <p className="text-3xl font-bold text-yellow-400">{stats.sealedCapsules || 0}</p>
+                <p className="text-3xl font-bold text-green-400">{stats.sealedCapsules || 0}</p>
                 <div className="text-xs text-gray-400 mt-1">
                   Server: <span className={stats.serverStatus === 'online' ? 'text-green-400' : 'text-red-400'}>
                     {stats.serverStatus || 'unknown'}

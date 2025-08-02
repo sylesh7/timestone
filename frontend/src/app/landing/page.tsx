@@ -9,10 +9,12 @@ import { Clock, Shield, Database, Zap, ArrowRight, CheckCircle, Play, Users, Sta
 import { TextAnimate } from '@/components/ui/text-animate';
 import { AnimatedGradientText } from '@/components/ui/animated-gradient-text';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
+import EncryptedButton from '@/components/ui/encrypted-button';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import DecryptedText from '@/components/ui/decrypted-text';
 import Hyperspeed from '@/components/Hyperspeed';
 import { MagicCard } from '@/components/ui/magic-card';
+import TextType from '@/components/ui/text-type';
 import { AnimatedBeam } from '@/components/ui/animated-beam';
 import Ripple from '@/components/ui/ripple';
 import { RainbowButton } from '@/components/ui/rainbow-button';
@@ -89,15 +91,24 @@ export default function LandingPage() {
           </div>
 
           {/* Subtitle */}
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-xl md:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed"
           >
-            Create encrypted time capsules that unlock at the perfect moment. 
-            Built with quantum-resistant encryption and powered by blockchain technology.
-          </motion.p>
+            <TextType
+              text="Create encrypted time capsules that unlock at the perfect moment. Built with quantum-resistant encryption and powered by blockchain technology."
+              typingSpeed={30}
+              initialDelay={2000}
+              showCursor={true}
+              cursorCharacter="_"
+              cursorClassName="text-green-400 font-bold"
+              loop={false}
+              textColors={["#22c55e"]}
+              className="text-xl md:text-2xl leading-relaxed font-bold"
+            />
+          </motion.div>
 
           {/* CTA Buttons */}
           <motion.div
@@ -107,13 +118,9 @@ export default function LandingPage() {
             className="flex flex-col sm:flex-row gap-6 justify-center items-center"
           >
             <Link href="/create">
-              <ShimmerButton
-                shimmerColor="#22c55e"
-                background="linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
-                className="text-lg px-8 py-4 font-semibold"
-              >
+              <EncryptedButton>
                 Create Capsule
-              </ShimmerButton>
+              </EncryptedButton>
             </Link>
             
             <Link href="/dashboard">
