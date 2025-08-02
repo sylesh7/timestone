@@ -34,6 +34,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const loadUserCapsules = async () => {
     if (!isConnected || !address) {
@@ -74,7 +79,7 @@ export default function Dashboard() {
               createdAt: new Date().toISOString(), // Contract doesn't store creation time
               message: ''
             },
-            canUnlock: !isUnlocked && new Date(Number(unlockTimestamp) * 1000) <= new Date(),
+            canUnlock: !isUnlocked && isClient && new Date(Number(unlockTimestamp) * 1000) <= new Date(),
             role: isCreator ? 'creator' : 'recipient',
             pinata: {
               ipfsHash,
@@ -166,6 +171,8 @@ export default function Dashboard() {
   };
 
   const getTimeRemaining = (unlockTimestamp: string) => {
+    if (!isClient) return 'Loading...';
+    
     const now = new Date().getTime();
     const unlockTime = new Date(unlockTimestamp).getTime();
     const diff = unlockTime - now;
