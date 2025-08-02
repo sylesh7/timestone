@@ -82,6 +82,24 @@ body {
   }
 }
 
+@keyframes ripple {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 .animate-gradient {
   animation: gradient 6s ease infinite;
 }
@@ -100,4 +118,12 @@ body {
 
 .animate-grid {
   animation: grid 15s linear infinite;
+}
+
+.animate-ripple {
+  animation: ripple 3.4s ease-in-out infinite;
+}
+
+.animate-gradient-xy {
+  animation: gradient-xy 4s ease infinite;
 }

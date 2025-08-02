@@ -1,9 +1,9 @@
 'use client';
-
+import { DecorativeBeam } from "@/components/ui/decorative-beam";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Clock, Shield, Database, Zap, ArrowRight, CheckCircle, Play, Users, Star, Gift } from 'lucide-react';
+import { Clock, Shield, Database, Zap, ArrowRight, CheckCircle, Play, Users, Star, Gift, Upload, Link as LinkIcon, Unlock } from 'lucide-react';
 
 // Magic UI components that we'll need to implement
 import { TextAnimate } from '@/components/ui/text-animate';
@@ -12,6 +12,10 @@ import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import DecryptedText from '@/components/ui/decrypted-text';
 import Hyperspeed from '@/components/Hyperspeed';
+import { MagicCard } from '@/components/ui/magic-card';
+import { AnimatedBeam } from '@/components/ui/animated-beam';
+import Ripple from '@/components/ui/ripple';
+import { RainbowButton } from '@/components/ui/rainbow-button';
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
@@ -203,28 +207,20 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                icon: Shield,
                 title: "Quantum-Safe Encryption",
-                description: "Post-quantum cryptography ensures your capsules remain secure even against future quantum computers.",
-                color: "from-green-400 to-emerald-500"
+                description: "Post-quantum cryptography ensures your capsules remain secure even against future quantum computers."
               },
               {
-                icon: Clock,
                 title: "Time-Lock Technology", 
-                description: "Precisely timed release mechanisms powered by blockchain oracles for guaranteed unlocking.",
-                color: "from-blue-400 to-cyan-500"
+                description: "Precisely timed release mechanisms powered by blockchain oracles for guaranteed unlocking."
               },
               {
-                icon: Database,
                 title: "Decentralized Storage",
-                description: "IPFS integration ensures your data is distributed and always accessible when needed.",
-                color: "from-purple-400 to-pink-500"
+                description: "IPFS integration ensures your data is distributed and always accessible when needed and they can unlock."
               },
               {
-                icon: Zap,
-                title: "Lightning Fast",
-                description: "Optimized smart contracts on Etherlink provide instant transactions and low fees.",
-                color: "from-yellow-400 to-orange-500"
+                title: "Lightning Fast Transactions ",
+                description: "Optimized smart contracts on Etherlink provide instant transactions with blockchain interaction and low fees."
               }
             ].map((feature, index) => (
               <motion.div
@@ -233,14 +229,17 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                whileHover={{ scale: 1.05 }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 hover:border-green-500/50 transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                className="group"
               >
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6`}>
-                  <feature.icon className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">{feature.title}</h3>
-                <p className="text-gray-300 leading-relaxed">{feature.description}</p>
+                <MagicCard 
+                  className="bg-gray-900/70 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 hover:border-green-500/50 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-green-500/20"
+                  gradientColor="rgba(34, 197, 94, 0.15)"
+                  gradientSize={300}
+                >
+                  <h3 className="text-2xl font-bold mb-4 text-white group-hover:text-green-400 transition-colors duration-300">{feature.title}</h3>
+                  <p className="text-gray-300 leading-relaxed group-hover:text-gray-200 transition-colors duration-300">{feature.description}</p>
+                </MagicCard>
               </motion.div>
             ))}
           </div>
@@ -248,8 +247,9 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-32 relative">
+      <section className="py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900/20 to-black" />
+        <Ripple />
         
         <div className="relative z-10 max-w-7xl mx-auto px-6">
           <motion.div
@@ -271,25 +271,33 @@ export default function LandingPage() {
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <div className="relative grid md:grid-cols-3 gap-12">
+            {/* Decorative Beams */}
+            <div className="hidden md:block absolute top-1/2 left-1/3 w-1/3 h-1 -translate-y-1/2">
+              <DecorativeBeam delay={1} />
+            </div>
+            <div className="hidden md:block absolute top-1/2 left-2/3 w-1/3 h-1 -translate-y-1/2">
+              <DecorativeBeam delay={2} />
+            </div>
+
             {[
               {
                 step: "01",
                 title: "Upload & Encrypt",
                 description: "Upload your files, add a personal message, and set the unlock date. Our quantum-safe encryption secures everything.",
-                icon: "📁"
+                icon: Upload
               },
               {
                 step: "02", 
                 title: "Store on Blockchain",
                 description: "Your encrypted capsule is stored on IPFS and registered on the blockchain with time-lock smart contracts.",
-                icon: "⛓️"
+                icon: LinkIcon
               },
               {
                 step: "03",
                 title: "Automatic Unlock",
                 description: "When the time comes, the capsule automatically unlocks and notifies the recipient with secure access.",
-                icon: "🔓"
+                icon: Unlock
               }
             ].map((step, index) => (
               <motion.div
@@ -298,76 +306,20 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.2 }}
                 viewport={{ once: true }}
-                className="text-center"
+                className="relative z-10"
               >
-                <div className="relative mb-8">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-4xl mb-4">
-                    {step.icon}
+                <MagicCard className="p-8 text-center bg-black/40 border-green-500/20 hover:border-green-500/40 transition-all duration-500">
+                  <div className="relative mb-8">
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-green-500/25">
+                      <step.icon className="h-12 w-12 text-white" />
+                    </div>
+                    <div className="absolute -top-2 -right-8 bg-black border-2 border-green-500 rounded-full w-12 h-12 flex items-center justify-center shadow-lg shadow-green-500/50">
+                      <span className="text-green-400 font-bold text-sm">{step.step}</span>
+                    </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 bg-black border-2 border-green-500 rounded-full w-12 h-12 flex items-center justify-center">
-                    <span className="text-green-400 font-bold text-sm">{step.step}</span>
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">{step.title}</h3>
-                <p className="text-gray-300 leading-relaxed">{step.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof Section */}
-      <section className="py-32 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-green-950/10 to-black" />
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="mb-20"
-          >
-            <h2 className="text-5xl md:text-6xl font-bold mb-6">
-              <span className="text-white">Trusted by </span>
-              <AnimatedGradientText
-                colorFrom="#22c55e"
-                colorTo="#16a34a"
-              >
-                Thousands
-              </AnimatedGradientText>
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8 mb-20">
-            {[
-              {
-                metric: "1000+",
-                label: "Active Users",
-                icon: Users
-              },
-              {
-                metric: "5000+",
-                label: "Capsules Created", 
-                icon: Gift
-              },
-              {
-                metric: "4.9/5",
-                label: "User Rating",
-                icon: Star
-              }
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-8"
-              >
-                <stat.icon className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                <div className="text-4xl font-bold text-white mb-2">{stat.metric}</div>
-                <div className="text-gray-300">{stat.label}</div>
+                  <h3 className="text-2xl font-bold mb-4 text-white">{step.title}</h3>
+                  <p className="text-gray-300 leading-relaxed group-hover:text-gray-200 transition-colors duration-300">{step.description}</p>
+                </MagicCard>
               </motion.div>
             ))}
           </div>
@@ -400,7 +352,7 @@ export default function LandingPage() {
               for the future. Start your journey today.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Link href="/create">
                 <ShimmerButton
                   shimmerColor="#22c55e"
@@ -410,6 +362,10 @@ export default function LandingPage() {
                   Start Creating Now
                 </ShimmerButton>
               </Link>
+              
+              <RainbowButton className="text-lg font-semibold">
+                Connect Wallet & Create
+              </RainbowButton>
               
               <Link href="/dashboard">
                 <motion.button
