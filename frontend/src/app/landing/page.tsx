@@ -16,6 +16,8 @@ import { MagicCard } from '@/components/ui/magic-card';
 import { AnimatedBeam } from '@/components/ui/animated-beam';
 import Ripple from '@/components/ui/ripple';
 import { RainbowButton } from '@/components/ui/rainbow-button';
+import { SmoothCursor } from "@/components/ui/smooth-cursor";
+
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
@@ -27,7 +29,9 @@ export default function LandingPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <>
+      <SmoothCursor />
+      <div className="min-h-screen bg-black text-white overflow-hidden cursor-none">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Animated Background */}
@@ -87,7 +91,7 @@ export default function LandingPage() {
               />
             </div>
           </div>
-
+          
           {/* Subtitle */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -390,5 +394,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

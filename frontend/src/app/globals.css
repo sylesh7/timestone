@@ -25,6 +25,18 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Smooth Cursor Styles */
+* {
+  cursor: none !important;
+}
+
+/* Keep text cursor for inputs and textareas */
+input,
+textarea,
+select {
+  cursor: text !important;
+}
+
 /* Custom animations for Magic UI components */
 @keyframes gradient {
   0% {
