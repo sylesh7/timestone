@@ -1,5 +1,3 @@
-import { Chain } from 'wagmi';
-
 export const etherlinkTestnet = {
   id: 128123,
   name: 'Etherlink Testnet',
@@ -17,4 +15,4 @@ export const etherlinkTestnet = {
     default: { name: 'Etherlink Explorer', url: 'https://testnet-explorer.etherlink.com' },
   },
   testnet: true,
-} as const satisfies Chain; 
+} as const 
