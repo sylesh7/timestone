@@ -193,14 +193,14 @@ export default function CreateCapsule() {
         privateKey: data.privateKey,
         fileId: fileId
       });
-      } catch (error: any) {
-        setResult({ 
-          success: false, 
-          error: error?.message || 'Failed to create time capsule'  
-        });
-      } finally {
-        setUploading(false);
-      }
+    } catch (error: any) {
+      setResult({ 
+        success: false, 
+        error: error?.message || 'Failed to create time capsule'  
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const formatPrivateKey = (key: string) => {

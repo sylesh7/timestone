@@ -8,7 +8,8 @@ import TimestoneAPI from '@/lib/api';
 import { ethers } from 'ethers';
 import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
 import { useAccount } from 'wagmi';
-import VerticalDock from '@/components/ui/vertical-dock';
+import TimeOracleVerification from '@/components/TimeOracleVerification';
+import { TimeOracleResponse } from '@/lib/tezos-rollup';
 
 interface UnlockData {
   fileId: string;
@@ -43,6 +44,9 @@ export default function UnlockCapsule() {
   const [capsuleMetadata, setCapsuleMetadata] = useState<any>(null);
   const [checkingCapsule, setCheckingCapsule] = useState(false);
   const [autoFilledKey, setAutoFilledKey] = useState(false);
+  const [timeOracleVerified, setTimeOracleVerified] = useState(false);
+  const [timeOracleResponse, setTimeOracleResponse] = useState<TimeOracleResponse | null>(null);
+  const [showTimeOracleVerification, setShowTimeOracleVerification] = useState(false);
 
   // Auto-fill requester address when wallet connects
   useEffect(() => {
@@ -156,9 +160,29 @@ export default function UnlockCapsule() {
       return;
     }
 
+    // Start time oracle verification first
+    setShowTimeOracleVerification(true);
     setUnlocking(true);
     setResult(null);
+  };
 
+  const handleTimeOracleComplete = (response: TimeOracleResponse) => {
+    console.log('✅ Time oracle verification completed:', response);
+    setTimeOracleVerified(true);
+    setTimeOracleResponse(response);
+    
+    // Proceed with unlock after time oracle verification
+    proceedWithUnlock();
+  };
+
+  const handleTimeOracleError = (error: string) => {
+    console.error('❌ Time oracle verification failed:', error);
+    setUnlocking(false);
+    setShowTimeOracleVerification(false);
+    setResult({ success: false, error: `Time oracle verification failed: ${error}` });
+  };
+
+  const proceedWithUnlock = async () => {
     try {
       if (!(window as any).ethereum) {
         throw new Error('No wallet found');
@@ -293,6 +317,7 @@ export default function UnlockCapsule() {
       });
     } finally {
       setUnlocking(false);
+      setShowTimeOracleVerification(false);
     }
   };
 
@@ -551,6 +576,17 @@ export default function UnlockCapsule() {
                       })()}
                     </p>
                   )}
+                  {timeOracleVerified && timeOracleResponse && (
+                    <div className="mt-2 p-2 bg-green-900/20 border border-green-500/30 rounded">
+                      <p className="text-green-300 text-xs font-medium flex items-center">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Time Oracle Verified ✓
+                      </p>
+                      <p className="text-green-400 text-xs">
+                        Confidence: {(timeOracleResponse.confidence_score * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -600,6 +636,15 @@ export default function UnlockCapsule() {
               )}
             </div>
 
+            {/* Time Oracle Verification */}
+            {showTimeOracleVerification && (
+              <TimeOracleVerification
+                onVerificationComplete={handleTimeOracleComplete}
+                onVerificationError={handleTimeOracleError}
+                autoStart={true}
+              />
+            )}
+
             {/* Error Display */}
             {result?.success === false && (
               <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
@@ -616,7 +661,12 @@ export default function UnlockCapsule() {
               disabled={unlocking || !formData.fileId || !formData.privateKey || !formData.requesterAddress || !isConnected}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {unlocking ? (
+              {unlocking && showTimeOracleVerification ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Verifying with Time Oracle...
+                </>
+              ) : unlocking ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Unlocking Time Capsule...
