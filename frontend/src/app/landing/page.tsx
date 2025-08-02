@@ -19,6 +19,8 @@ import { AnimatedBeam } from '@/components/ui/animated-beam';
 import Ripple from '@/components/ui/ripple';
 import { RainbowButton } from '@/components/ui/rainbow-button';
 
+
+
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
 
@@ -89,7 +91,7 @@ export default function LandingPage() {
               />
             </div>
           </div>
-
+          
           {/* Subtitle */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

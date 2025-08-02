@@ -19,7 +19,7 @@ contract TimeOracleFileLocker {
     mapping(address => bytes32[]) public recipientFiles;   // Files sent to user
     
 
-    string public rollupAddress = "sr1MYkp5MprutS16fkJP6ZNAt8adgnMozWhj";
+    string public rollupAddress = "sr1CWGmH7T4ujK34pkFebfKpVQFeaxjvwjR2";
     
     event FileLocked(bytes32 indexed fileId, address indexed owner, address indexed recipient, string ipfsHash, uint256 unlockTimestamp, uint256 lockFee);
     event UnlockRequested(bytes32 indexed fileId, address indexed owner, string rollupAddress, uint256 unlockTimestamp);
