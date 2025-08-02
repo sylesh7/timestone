@@ -57,7 +57,7 @@ export function RainbowButton({ className, children }: RainbowButtonProps) {
                   >
                     <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2E8F0_0%,#1E293B_50%,#E2E8F0_100%)]" />
                     <span className="absolute inset-[2px] rounded-[10px] bg-gradient-to-r from-purple-600 via-pink-500 via-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-600 bg-[length:400%_400%] animate-gradient-xy" />
-                    <span className="relative z-10 inline-flex h-full w-full cursor-pointer items-center justify-center rounded-[10px] bg-black/90 backdrop-blur-sm px-6 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-black/80">
+                    <span className="relative z-10 inline-flex h-full w-full cursor-pointer items-center justify-center rounded-[10px] bg-black backdrop-blur-sm px-6 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-black/90">
                       {children || (
                         <>
                           <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse" />

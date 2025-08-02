@@ -21,7 +21,7 @@ export default function WalletProvider({ children }: { children: React.ReactNode
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={config}>
         <RainbowKitProvider>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem', backgroundColor: 'black' }}>
             <RainbowButton />
           </div>
           {children}
