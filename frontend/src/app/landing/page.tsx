@@ -331,53 +331,94 @@ export default function LandingPage() {
       <section className="py-32 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-green-950/30 via-black to-green-950/30" />
         
-        <div className="relative z-10 max-w-4xl mx-auto text-center px-6">
+        <div className="relative z-10 max-w-6xl mx-auto text-center px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-5xl md:text-6xl font-bold mb-8">
-              <span className="text-white">Ready to Create Your </span>
+            <h2 className="text-5xl md:text-7xl font-bold mb-8">
+              <span className="text-white">Your </span>
               <AnimatedGradientText
                 colorFrom="#22c55e"
                 colorTo="#16a34a"
               >
-                First Capsule?
+                Digital Legacy
               </AnimatedGradientText>
+              <span className="text-white"> Awaits</span>
             </h2>
             
-            <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-              Join thousands of users who trust TimeStone to preserve their most precious memories 
-              for the future. Start your journey today.
+            <p className="text-xl md:text-2xl text-gray-300 mb-16 max-w-4xl mx-auto leading-relaxed">
+              Transform your most valuable memories into quantum-secured time capsules. 
+              When the moment is right, your legacy unlocks automatically through blockchain technology.
             </p>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-400 mb-2">
+                  <NumberTicker value={256} />-bit
+                </div>
+                <p className="text-gray-400">Quantum-Resistant Encryption</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-400 mb-2">
+                  <NumberTicker value={99.99} decimalPlaces={2} />%
+                </div>
+                <p className="text-gray-400">Immutable Storage Guarantee</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-400 mb-2">
+                  Infinite
+                </div>
+                <p className="text-gray-400">Preservation Timeline</p>
+              </div>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Link href="/create">
                 <ShimmerButton
                   shimmerColor="#22c55e"
                   background="linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
-                  className="text-lg px-10 py-5 font-semibold"
+                  className="text-lg px-12 py-6 font-bold"
                 >
-                  Start Creating Now
+                  Begin Your Legacy
                 </ShimmerButton>
               </Link>
               
-              <RainbowButton className="text-lg font-semibold">
-                Connect Wallet & Create
-              </RainbowButton>
-              
               <Link href="/dashboard">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)" }}
                   whileTap={{ scale: 0.95 }}
-                  className="text-lg px-10 py-5 border border-green-500/50 rounded-lg hover:bg-green-950/30 transition-all duration-300"
+                  className="text-lg px-12 py-6 border-2 border-green-500/70 rounded-lg hover:bg-green-950/30 transition-all duration-300 font-semibold"
                 >
-                  Explore Features
+                  Explore the Vault
                 </motion.button>
               </Link>
             </div>
+
+            {/* Trust Indicators */}
+            <motion.div 
+              className="mt-16 flex flex-col md:flex-row justify-center items-center gap-8 text-sm text-gray-400"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-green-400" />
+                <span>Blockchain Verified</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-green-400" />
+                <span>Decentralized Storage</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-green-400" />
+                <span>Instant Deployment</span>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
