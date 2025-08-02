@@ -374,9 +374,9 @@ export default function UnlockCapsule() {
 
   if (result?.success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+      <div className="min-h-screen bg-black p-6">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+          <div className="bg-black/60 backdrop-blur-lg rounded-xl p-8 border border-green-500/20">
             <div className="text-center">
               <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-white mb-4">Time Capsule Unlocked!</h1>
@@ -414,7 +414,7 @@ export default function UnlockCapsule() {
                 </button>
                 <Link
                   href="/unlock"
-                  className="border border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white px-6 py-3 rounded-lg transition-all"
+                  className="border border-green-500 text-green-400 hover:bg-green-500 hover:text-white px-6 py-3 rounded-lg transition-all"
                 >
                   Unlock Another
                 </Link>
@@ -427,17 +427,17 @@ export default function UnlockCapsule() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+    <div className="min-h-screen bg-black p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-8">
-          <Link href="/" className="flex items-center text-gray-300 hover:text-white transition-colors">
+          <Link href="/" className="flex items-center text-gray-300 hover:text-green-400 transition-colors">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Home
           </Link>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+        <div className="bg-black/60 backdrop-blur-lg rounded-xl p-8 border border-green-500/20">
           <h1 className="text-3xl font-bold text-white mb-8 text-center">
             <Unlock className="w-8 h-8 inline mr-2" />
             Unlock Time Capsule
@@ -455,13 +455,13 @@ export default function UnlockCapsule() {
                   value={formData.fileId}
                   onChange={(e) => setFormData(prev => ({ ...prev, fileId: e.target.value }))}
                   onBlur={() => checkCapsuleStatus(formData.fileId)}
-                  className="flex-1 px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none font-mono text-sm"
+                  className="flex-1 px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none font-mono text-sm"
                   placeholder="Enter file ID (bytes32 format)"
                   required
                 />
                 {checkingCapsule && (
                   <div className="flex items-center px-3">
-                    <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
                   </div>
                 )}
               </div>
@@ -533,7 +533,7 @@ export default function UnlockCapsule() {
                 type="text"
                 value={formData.requesterAddress}
                 onChange={(e) => setFormData(prev => ({ ...prev, requesterAddress: e.target.value }))}
-                className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none font-mono text-sm"
+                className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none font-mono text-sm"
                 placeholder="Enter your address"
                 required
                 readOnly={!!address}
@@ -553,7 +553,7 @@ export default function UnlockCapsule() {
                 value={formData.privateKey}
                 onChange={(e) => setFormData(prev => ({ ...prev, privateKey: e.target.value }))}
                 rows={4}
-                className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none resize-none font-mono text-sm"
+                className="w-full px-4 py-3 bg-black/20 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none resize-none font-mono text-sm"
                 placeholder="Paste your private key here..."
                 required
               />
@@ -583,7 +583,7 @@ export default function UnlockCapsule() {
             <button
               type="submit"
               disabled={unlocking || !formData.fileId || !formData.privateKey || !formData.requesterAddress || !isConnected}
-              className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {unlocking ? (
                 <>
