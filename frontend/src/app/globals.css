@@ -5,6 +5,29 @@
   --foreground: #171717;
 }
 
+/* Shimmer animation for shiny buttons */
+@keyframes shimmer {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Rainbow animation for rainbow buttons */
+@keyframes rainbow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -100,6 +123,18 @@ body {
   }
 }
 
+@keyframes shine-border {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  to {
+    background-position: 0% 0%;
+  }
+}
+
 .animate-gradient {
   animation: gradient 6s ease infinite;
 }
@@ -126,4 +161,8 @@ body {
 
 .animate-gradient-xy {
   animation: gradient-xy 4s ease infinite;
+}
+
+.animate-shine-border {
+  animation: shine-border var(--duration) linear infinite;
 }

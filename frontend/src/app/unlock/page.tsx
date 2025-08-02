@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Unlock, Key, Download, Loader2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Unlock, Key, Download, Loader2, CheckCircle, AlertCircle, Clock, Home, BarChart3 } from 'lucide-react';
 import TimestoneAPI from '@/lib/api';
 import { ethers } from 'ethers';
 import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
 import { useAccount } from 'wagmi';
+import VerticalDock from '@/components/ui/vertical-dock';
 
 interface UnlockData {
   fileId: string;
@@ -428,6 +429,36 @@ export default function UnlockCapsule() {
 
   return (
     <div className="min-h-screen bg-black p-6">
+      {/* Vertical Dock with Gooey Effects */}
+      <VerticalDock 
+        items={[
+          { 
+            icon: <Home size={18} className="text-white" />, 
+            label: 'Home', 
+            onClick: () => window.location.href = '/' 
+          },
+          { 
+            icon: <BarChart3 size={18} className="text-white" />, 
+            label: 'Dashboard', 
+            onClick: () => window.location.href = '/dashboard' 
+          },
+          { 
+            icon: <Unlock size={18} className="text-white" />, 
+            label: 'Unlock Capsule', 
+            onClick: () => {} 
+          },
+        ]}
+        panelWidth={68}
+        baseItemSize={50}
+        magnification={70}
+        particleCount={15}
+        particleDistances={[90, 10]}
+        particleR={100}
+        animationTime={600}
+        timeVariance={300}
+        colors={[1, 2, 3, 4]}
+      />
+
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-8">
