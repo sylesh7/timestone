@@ -10,6 +10,7 @@ import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/
 import { useAccount } from 'wagmi';
 import TimeOracleVerification from '@/components/TimeOracleVerification';
 import { TimeOracleResponse } from '@/lib/tezos-rollup';
+import VerticalDock from '@/components/ui/vertical-dock';
 
 interface UnlockData {
   fileId: string;
