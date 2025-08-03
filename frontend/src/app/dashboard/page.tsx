@@ -223,7 +223,7 @@ export default function Dashboard() {
         .dashboard-card-inner {
           width: 100%;
           height: 100%;
-          background-color: #1a1a1a;
+          background-color: #000000;
           border-radius: 18px;
           transition: all 0.2s;
         }

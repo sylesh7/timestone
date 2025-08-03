@@ -234,7 +234,7 @@ export default function LandingPage() {
                 className="group"
               >
                 <MagicCard 
-                  className="bg-gray-900/70 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 hover:border-green-500/50 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-green-500/20"
+                  className="bg-black/70 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 hover:border-green-500/50 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-green-500/20"
                   gradientColor="rgba(34, 197, 94, 0.15)"
                   gradientSize={300}
                 >

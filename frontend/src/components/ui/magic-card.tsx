@@ -24,7 +24,7 @@ export function MagicCard({
     <div
       ref={divRef}
       className={cn(
-        "relative overflow-hidden rounded-xl border bg-gradient-to-r from-black to-gray-950 p-8",
+        "relative overflow-hidden rounded-xl border bg-gradient-to-r from-black to-black p-8",
         className,
       )}
     >

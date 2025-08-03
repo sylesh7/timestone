@@ -408,7 +408,7 @@ export default function UnlockCapsule() {
             background: transparent;
             border-radius: 20px;
             transition: all 0.3s;
-            padding: 0.5px;
+            padding: 0.25px;
             border: 1px solid rgba(75, 85, 99, 0.3);
           }
 
@@ -421,7 +421,7 @@ export default function UnlockCapsule() {
           .unlock-card-inner {
             width: 100%;
             height: 100%;
-            background-color: #1a1a1a;
+            background-color: #000000;
             border-radius: 18px;
             transition: all 0.2s;
           }
@@ -508,7 +508,7 @@ export default function UnlockCapsule() {
         .unlock-card-inner {
           width: 100%;
           height: 100%;
-          background-color: #1a1a1a;
+          background-color: #000000;
           border-radius: 18px;
           transition: all 0.2s;
         }
