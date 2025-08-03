@@ -164,14 +164,14 @@ export default function Dashboard() {
   };
 
   const getFileTypeIcon = (type: string) => {
-    if (!type) return '📁';
-    if (type.startsWith('image/')) return '🖼️';
-    if (type.startsWith('video/')) return '🎥';
-    if (type.startsWith('audio/')) return '🎵';
-    if (type.includes('pdf')) return '📄';
-    if (type.includes('document') || type.includes('text')) return '📝';
-    if (type.includes('archive') || type.includes('zip')) return '📦';
-    return '📁';
+    if (!type) return <FileIcon className="w-6 h-6 text-green-400" />;
+    if (type.startsWith('image/')) return <Eye className="w-6 h-6 text-green-400" />;
+    if (type.startsWith('video/')) return <Eye className="w-6 h-6 text-green-400" />;
+    if (type.startsWith('audio/')) return <MessageSquare className="w-6 h-6 text-green-400" />;
+    if (type.includes('pdf')) return <FileIcon className="w-6 h-6 text-green-400" />;
+    if (type.includes('document') || type.includes('text')) return <FileIcon className="w-6 h-6 text-green-400" />;
+    if (type.includes('archive') || type.includes('zip')) return <Archive className="w-6 h-6 text-green-400" />;
+    return <FileIcon className="w-6 h-6 text-green-400" />;
   };
 
   const getTimeRemaining = (unlockTimestamp: string) => {
@@ -292,7 +292,7 @@ export default function Dashboard() {
 
           {/* Stats Section */}
           {loadingStats ? (
-            <div className="grid md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 animate-pulse">
                   <div className="h-4 bg-gray-600 rounded mb-2"></div>
@@ -301,27 +301,27 @@ export default function Dashboard() {
               ))}
             </div>
           ) : stats ? (
-            <div className="grid md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center">
-                <h3 className="text-lg font-semibold text-white mb-2">Total Capsules</h3>
-                <p className="text-3xl font-bold text-green-400">{stats.totalCapsules || 0}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center hover:bg-gray-900/30 transition-colors">
+                <h3 className="text-sm font-medium text-gray-300 mb-2 truncate">Total Capsules</h3>
+                <p className="text-2xl font-bold text-green-400">{stats.totalCapsules || 0}</p>
                 {stats.error && (
-                  <p className="text-xs text-yellow-400 mt-1">⚠️ {stats.error}</p>
+                  <p className="text-xs text-yellow-400 mt-1 truncate">⚠️ {stats.error}</p>
                 )}
               </div>
-              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center">
-                <h3 className="text-lg font-semibold text-white mb-2">Created by You</h3>
-                <p className="text-3xl font-bold text-cyan-400">{stats.createdCapsules || 0}</p>
+              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center hover:bg-gray-900/30 transition-colors">
+                <h3 className="text-sm font-medium text-gray-300 mb-2 truncate">Created by You</h3>
+                <p className="text-2xl font-bold text-cyan-400">{stats.createdCapsules || 0}</p>
                 <p className="text-xs text-gray-400 mt-1">Files you sent</p>
               </div>
-              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center">
-                <h3 className="text-lg font-semibold text-white mb-2">Sent to You</h3>
-                <p className="text-3xl font-bold text-emerald-400">{stats.receivedCapsules || 0}</p>
+              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center hover:bg-gray-900/30 transition-colors">
+                <h3 className="text-sm font-medium text-gray-300 mb-2 truncate">Sent to You</h3>
+                <p className="text-2xl font-bold text-emerald-400">{stats.receivedCapsules || 0}</p>
                 <p className="text-xs text-gray-400 mt-1">Files you received</p>
               </div>
-              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center">
-                <h3 className="text-lg font-semibold text-white mb-2">Sealed</h3>
-                <p className="text-3xl font-bold text-amber-400">{stats.sealedCapsules || 0}</p>
+              <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 text-center hover:bg-gray-900/30 transition-colors">
+                <h3 className="text-sm font-medium text-gray-300 mb-2 truncate">Sealed</h3>
+                <p className="text-2xl font-bold text-amber-400">{stats.sealedCapsules || 0}</p>
                 <div className="text-xs text-gray-400 mt-1">
                   Server: <span className={stats.serverStatus === 'online' ? 'text-green-400' : 'text-red-400'}>
                     {stats.serverStatus || 'unknown'}
@@ -335,31 +335,33 @@ export default function Dashboard() {
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-white mb-4">Your Time Capsules</h3>
             <div className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-gray-300 mb-1">
-                    {address ? `Loading capsules for: ${address}` : 'Connect your wallet to load capsules'}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-300 mb-1 truncate">
+                    {address ? `Loading capsules for: ${address.substring(0, 10)}...${address.substring(address.length - 8)}` : 'Connect your wallet to load capsules'}
                   </p>
                   <p className="text-xs text-gray-400">
                     This will show all capsules you created or received
                   </p>
                 </div>
-                <ShinyButton
-                  onClick={loadUserCapsules}
-                  disabled={!isConnected || loading}
-                  shimmerColor="#06b6d4"
-                  background="linear-gradient(110deg, #7c3aed 45%, #06b6d4 55%, #7c3aed)"
-                  className="text-white border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Loading...
-                    </>
-                  ) : (
-                    'Refresh Capsules'
-                  )}
-                </ShinyButton>
+                <div className="flex-shrink-0">
+                  <ShinyButton
+                    onClick={loadUserCapsules}
+                    disabled={!isConnected || loading}
+                    shimmerColor="#06b6d4"
+                    background="linear-gradient(110deg, #7c3aed 45%, #06b6d4 55%, #7c3aed)"
+                    className="text-white border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Loading...
+                      </>
+                    ) : (
+                      'Refresh Capsules'
+                    )}
+                  </ShinyButton>
+                </div>
               </div>
             </div>
           </div>
@@ -369,52 +371,146 @@ export default function Dashboard() {
             <h3 className="text-xl font-bold text-white mb-6"> Your Time Capsules</h3>
             
             {capsules.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                 {capsules.map((capsule, index) => (
                   <div
                     key={capsule.fileId}
-                    className="bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 hover:border-purple-500/50 transition-colors cursor-pointer"
-                    onClick={() => handleViewCapsule(capsule)}
+                    className={`bg-gray-900/20 rounded-lg p-6 border border-gray-600/30 transition-all duration-300 min-h-[200px] flex flex-col ${
+                      capsule.metadata.status === 'unlocked' 
+                        ? 'opacity-75 cursor-default' 
+                        : 'hover:border-green-500/50 cursor-pointer hover:scale-105 hover:shadow-lg'
+                    }`}
+                    onClick={() => {
+                      if (capsule.metadata.status !== 'unlocked') {
+                        handleViewCapsule(capsule);
+                      }
+                    }}
                   >
-                    <h4 className="text-lg font-semibold text-white mb-2">
-                      {capsule.metadata.fileName || `Capsule #${index + 1}`}
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-gray-300">
-                        <span className="text-green-400">Creator:</span> {capsule.metadata.creatorAddress}
-                      </p>
-                      <p className="text-gray-300">
-                        <span className="text-blue-400">Unlock Time:</span> {new Date(capsule.metadata.unlockTimestamp).toLocaleDateString()}
-                      </p>
-                      <p className="text-gray-300">
-                        <span className="text-purple-400">Status:</span> 
-                        <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                    {/* File Type Icon and Name */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0">
+                        {getFileTypeIcon(capsule.metadata.fileName)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-lg font-semibold text-white mb-1 truncate" title={capsule.metadata.fileName || `Capsule #${index + 1}`}>
+                          {capsule.metadata.fileName || `Capsule #${index + 1}`}
+                        </h4>
+                        <p className="text-xs text-gray-400">
+                          {capsule.role === 'creator' ? 'Created by you' : 'Sent to you'}
+                          {capsule.metadata.status === 'unlocked' && (
+                            <span className="text-green-400 font-medium ml-2">• Unlocked</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Capsule Details */}
+                    <div className="space-y-3 text-sm flex-1">
+                      <div>
+                        <p className="text-gray-400 text-xs mb-1">Creator Address:</p>
+                        <p className="text-green-400 font-mono text-xs truncate" title={capsule.metadata.creatorAddress}>
+                          {capsule.metadata.creatorAddress.substring(0, 8)}...{capsule.metadata.creatorAddress.substring(capsule.metadata.creatorAddress.length - 6)}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-gray-400 text-xs mb-1">Recipient Address:</p>
+                        <p className="text-blue-400 font-mono text-xs truncate" title={capsule.metadata.recipientAddress}>
+                          {capsule.metadata.recipientAddress.substring(0, 8)}...{capsule.metadata.recipientAddress.substring(capsule.metadata.recipientAddress.length - 6)}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-gray-400 text-xs mb-1">Unlock Date:</p>
+                        <p className="text-purple-400 text-sm font-medium">
+                          {new Date(capsule.metadata.unlockTimestamp).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          {new Date(capsule.metadata.unlockTimestamp).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-gray-400 text-xs mb-1">Time Remaining:</p>
+                        <p className="text-amber-400 text-sm font-medium">
+                          {getTimeRemaining(capsule.metadata.unlockTimestamp)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="mt-4 pt-4 border-t border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           capsule.metadata.status === 'unlocked'
-                            ? 'bg-green-600 text-white'
-                            : 'bg-orange-600 text-white'
+                            ? 'bg-green-600/20 text-green-400 border border-green-600/30'
+                            : 'bg-orange-600/20 text-orange-400 border border-orange-600/30'
                         }`}>
-                          {capsule.metadata.status === 'unlocked' ? '🔓 Unlocked' : '🔒 Locked'}
+                          {capsule.metadata.status === 'unlocked' ? (
+                            <span className="flex items-center gap-1">
+                              <Unlock className="w-3 h-3" />
+                              Unlocked
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              Locked
+                            </span>
+                          )}
                         </span>
-                      </p>
+                        {capsule.canUnlock && capsule.metadata.status !== 'unlocked' && (
+                          <span className="text-green-400 text-xs font-medium animate-pulse">
+                            Ready to unlock!
+                          </span>
+                        )}
+                        {capsule.metadata.status === 'unlocked' && (
+                          <span className="text-gray-400 text-xs font-medium">
+                            Already unlocked
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📭</div>
-                <p className="text-gray-400 text-lg">No time capsules found</p>
-                <p className="text-gray-500 text-sm mt-2">
+              <div className="text-center py-16">
+                <div className="mb-6">
+                  <Archive className="w-20 h-20 text-green-400 mx-auto" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">No time capsules found</h3>
+                <p className="text-gray-400 text-base mb-4">
                   Create your first time capsule or check if you're connected to the right wallet
                 </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                  <Link href="/create">
+                    <EncryptedButton className="font-semibold px-6 py-3">
+                      Create Your First Capsule
+                    </EncryptedButton>
+                  </Link>
+                  <button
+                    onClick={loadUserCapsules}
+                    disabled={!isConnected || loading}
+                    className="px-6 py-3 bg-purple-600/20 text-purple-400 border border-purple-600/30 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Loading...' : 'Refresh'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 justify-center mt-8 pt-8 border-t border-gray-600">
+          <div className="flex flex-row gap-4 justify-center items-center mt-8 pt-8 border-t border-gray-600">
             <Link href="/create">
-              <EncryptedButton className="font-semibold">
+              <EncryptedButton className="font-semibold px-8 py-3">
                 Create New Capsule
               </EncryptedButton>
             </Link>
@@ -422,7 +518,7 @@ export default function Dashboard() {
               <ShinyButton
                 shimmerColor="#10b981"
                 background="linear-gradient(110deg, #059669 45%, #10b981 55%, #059669)"
-                className="text-white border-green-500 font-semibold px-8"
+                className="text-white border-green-500 font-semibold px-8 py-3"
               >
                 Unlock Capsule
               </ShinyButton>
