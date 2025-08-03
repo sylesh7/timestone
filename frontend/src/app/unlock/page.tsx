@@ -474,8 +474,15 @@ export default function UnlockCapsule() {
                   Download File
                 </button>
                 <Link
+                  href="/"
+                  className="border border-green-500 text-green-400 hover:bg-green-500 hover:text-white px-6 py-3 rounded-lg transition-all flex items-center gap-2"
+                >
+                  <Home className="w-4 h-4" />
+                  Back to Home
+                </Link>
+                <Link
                   href="/unlock"
-                  className="border border-green-500 text-green-400 hover:bg-green-500 hover:text-white px-6 py-3 rounded-lg transition-all"
+                  className="border border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white px-6 py-3 rounded-lg transition-all"
                 >
                   Unlock Another
                 </Link>
