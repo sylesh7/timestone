@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Unlock, Key, Download, Loader2, CheckCircle, AlertCircle, Clock, Home, BarChart3 } from 'lucide-react';
@@ -33,6 +33,21 @@ interface UnlockResult {
 }
 
 export default function UnlockCapsule() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin text-green-400" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    }>
+      <UnlockCapsuleContent />
+    </Suspense>
+  );
+}
+
+function UnlockCapsuleContent() {
   const { address, isConnected } = useAccount();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<UnlockData>({
