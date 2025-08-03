@@ -19,6 +19,7 @@ import TextType from '@/components/ui/text-type';
 import { AnimatedBeam } from '@/components/ui/animated-beam';
 import Ripple from '@/components/ui/ripple';
 import { RainbowButton } from '@/components/ui/rainbow-button';
+import ScrollFloat from '@/components/ui/scroll-float';
 
 
 
@@ -190,15 +191,12 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <h2 className="text-5xl md:text-6xl font-bold mb-6">
-              <span className="text-white">Powered by </span>
-              <AnimatedGradientText
-                colorFrom="#22c55e"
-                colorTo="#16a34a"
-              >
-                Advanced Technology
-              </AnimatedGradientText>
-            </h2>
+            <ScrollFloat
+              containerClassName="text-5xl md:text-6xl font-bold mb-6"
+              textClassName="text-white"
+            >
+              Powered by Advanced Technology
+            </ScrollFloat>
             <h3 className="text-2xl md:text-3xl font-semibold text-green-400 mb-6">
               Etherlink time oracle smart rollups and next-gen quantum-resistant encryption
             </h3>
@@ -263,16 +261,12 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <h2 className="text-5xl md:text-6xl font-bold mb-6">
-              <span className="text-white">Simple </span>
-              <AnimatedGradientText
-                colorFrom="#22c55e"
-                colorTo="#16a34a"
-              >
-                Three-Step
-              </AnimatedGradientText>
-              <span className="text-white"> Process</span>
-            </h2>
+            <ScrollFloat
+              containerClassName="text-5xl md:text-6xl font-bold mb-6"
+              textClassName="text-white"
+            >
+              Simple Three-Step Process
+            </ScrollFloat>
           </motion.div>
 
           <div className="relative grid md:grid-cols-3 gap-12">
@@ -341,16 +335,12 @@ export default function LandingPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-8">
-              <span className="text-white">Your </span>
-              <AnimatedGradientText
-                colorFrom="#22c55e"
-                colorTo="#16a34a"
-              >
-                Digital Legacy
-              </AnimatedGradientText>
-              <span className="text-white"> Awaits</span>
-            </h2>
+            <ScrollFloat
+              containerClassName="text-5xl md:text-7xl font-bold mb-8"
+              textClassName="text-white"
+            >
+              Your Digital Legacy Awaits
+            </ScrollFloat>
             
             <p className="text-xl md:text-2xl text-gray-300 mb-16 max-w-4xl mx-auto leading-relaxed">
               Transform your most valuable memories into quantum-secured time capsules. 
