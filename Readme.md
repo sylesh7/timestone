@@ -55,7 +55,7 @@ The TimeStone platform consists of five main components:
 
 ## Project Structure
 
-
+```
 timestone/
 ├── frontend/                 # Next.js React application
 │   ├── src/
@@ -93,7 +93,7 @@ timestone/
 │   ├── scripts/             # Deployment scripts
 │   └── hardhat.config.ts    # Hardhat configuration
 └── README.md
-
+```
 
 ## Complete User Flow
 
@@ -235,42 +235,42 @@ struct TimeVerificationResponse {
 - Tezos development tools
 
 ### Frontend Setup
-bash
+```
 cd frontend
 npm install
 npm run dev
-
+```
 
 ### Backend Setup
-bash
+```
 cd backend
 npm install
 # Set environment variables
 cp .env.example .env
 npm run dev
-
+```
 
 ### Smart Contract Setup
-bash
+```
 cd Etherlink
 npm install
 npx hardhat compile
 npx hardhat test
 npx hardhat deploy
-
+```
 
 ### Time Oracle Rollup Setup
-bash
+```
 cd time-oracle-rollup
 cargo build --target wasm32-unknown-unknown --release
 # Deploy rollup to Tezos testnet
 octez-smart-rollup-node-alpha run operator
-
+```
 
 ## Environment Variables
 
 ### Backend (.env)
-env
+```
 PORT=3001
 IPFS_NODE_URL=https://ipfs.infura.io:5001
 WEB3_STORAGE_TOKEN=your_web3_storage_token
@@ -278,23 +278,23 @@ NODE_ENV=development
 CORS_ORIGIN=http://localhost:3000
 TIME_ORACLE_ROLLUP_ADDRESS=your_rollup_address
 TEZOS_RPC_URL=https://rpc.ghostnet.teztnets.xyz
-
+```
 
 ### Frontend (.env.local)
-env
+```
 NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
 NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address
 NEXT_PUBLIC_CHAIN_ID=your_chain_id
 NEXT_PUBLIC_ROLLUP_ADDRESS=your_rollup_address
-
+```
 
 ### Time Oracle Rollup (.env)
-env
+```
 TEZOS_NODE_URL=https://rpc.ghostnet.teztnets.xyz
 ROLLUP_ADDRESS=your_rollup_address
 OPERATOR_KEY=your_operator_private_key
 DATA_DIR=./rollup_data
-
+```
 
 ## API Endpoints
 
