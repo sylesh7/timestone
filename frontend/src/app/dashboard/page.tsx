@@ -10,6 +10,7 @@ import { useAccount } from 'wagmi';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import EncryptedButton from '@/components/ui/encrypted-button';
 import VerticalDock from '@/components/ui/vertical-dock';
+import IsolatedTitleComponent from '@/components/IsolatedTitleComponent';
 
 interface Capsule {
   fileId: string;
@@ -204,6 +205,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black p-6">
+      {/* TimeStone Title - Top Left - Completely Isolated */}
+      <IsolatedTitleComponent />
+
       <style jsx>{`
         .dashboard-card {
           width: 100%;

@@ -11,6 +11,7 @@ import { useAccount } from 'wagmi';
 import TimeOracleVerification from '@/components/TimeOracleVerification';
 import { TimeOracleResponse } from '@/lib/tezos-rollup';
 import VerticalDock from '@/components/ui/vertical-dock';
+import IsolatedTitleComponent from '@/components/IsolatedTitleComponent';
 
 interface UnlockData {
   fileId: string;
@@ -402,6 +403,9 @@ export default function UnlockCapsule() {
   if (result?.success) {
     return (
       <div className="min-h-screen bg-black p-6">
+        {/* TimeStone Title - Top Left - Completely Isolated */}
+        <IsolatedTitleComponent />
+
         <style jsx>{`
           .unlock-card {
             width: 100%;
@@ -487,6 +491,9 @@ export default function UnlockCapsule() {
 
   return (
     <div className="min-h-screen bg-black p-6">
+      {/* TimeStone Title - Top Left - Completely Isolated */}
+      <IsolatedTitleComponent />
+
       <style jsx>{`
         .unlock-card {
           width: 100%;
