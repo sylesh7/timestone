@@ -31,8 +31,8 @@ export default function DecryptedText({
     delay = 0,
     ...props
 }: DecryptedTextProps) {
-    // Start with the final text visible, then animate
-    const [displayText, setDisplayText] = useState<string>(text)
+    // Start with scrambled text for mount animations, empty for others
+    const [displayText, setDisplayText] = useState<string>(animateOn === 'mount' ? '' : text)
     const [isAnimating, setIsAnimating] = useState<boolean>(false)
     const [isScrambling, setIsScrambling] = useState<boolean>(false)
     const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())

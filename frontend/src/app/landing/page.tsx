@@ -64,13 +64,17 @@ export default function LandingPage() {
                 encryptedClassName="text-green-400/70"
                 parentClassName="inline-block"
               />
-              <AnimatedGradientText
-                colorFrom="#22c55e"
-                colorTo="#16a34a"
-                className="inline-block mx-2"
-              >
-                Memories
-              </AnimatedGradientText>
+              <DecryptedText
+                text="Memories"
+                animateOn="mount"
+                sequential={true}
+                revealDirection="start"
+                speed={80}
+                delay={900}
+                className="text-green-400"
+                encryptedClassName="text-green-400/70"
+                parentClassName="inline-block mx-2"
+              />
               <DecryptedText
                 text=" in Time"
                 animateOn="mount"
