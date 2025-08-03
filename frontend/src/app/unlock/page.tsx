@@ -402,11 +402,43 @@ export default function UnlockCapsule() {
   if (result?.success) {
     return (
       <div className="min-h-screen bg-black p-6">
+        <style jsx>{`
+          .unlock-card {
+            width: 100%;
+            background: transparent;
+            border-radius: 20px;
+            transition: all 0.3s;
+            padding: 0.5px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+          }
+
+          .unlock-card:hover {
+            background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
+            box-shadow: 0px 0px 30px 1px rgba(0, 255, 117, 0.30);
+            border: none;
+          }
+
+          .unlock-card-inner {
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a1a;
+            border-radius: 18px;
+            transition: all 0.2s;
+          }
+
+          .unlock-card-inner:hover {
+            transform: scale(0.98);
+            border-radius: 20px;
+          }
+        `}</style>
+        
         <div className="max-w-2xl mx-auto">
-          <div className="bg-black/60 backdrop-blur-lg rounded-xl p-8 border border-green-500/20">
-            <div className="text-center">
-              <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-white mb-4">Time Capsule Unlocked!</h1>
+          <div className="unlock-card">
+            <div className="unlock-card-inner">
+              <div className="p-8">
+                <div className="text-center">
+                  <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                  <h1 className="text-2xl font-bold text-white mb-4">Time Capsule Unlocked!</h1>
               
               <div className="bg-black/20 rounded-lg p-6 mb-6">
                 <div className="flex items-center justify-center mb-4">
@@ -446,6 +478,8 @@ export default function UnlockCapsule() {
                   Unlock Another
                 </Link>
               </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -455,6 +489,36 @@ export default function UnlockCapsule() {
 
   return (
     <div className="min-h-screen bg-black p-6">
+      <style jsx>{`
+        .unlock-card {
+          width: 100%;
+          background: transparent;
+          border-radius: 20px;
+          transition: all 0.3s;
+          padding: 0.25px;
+          border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .unlock-card:hover {
+          background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
+          box-shadow: 0px 0px 0px 0px rgba(0, 255, 117, 0.30);
+          border: none;
+        }
+
+        .unlock-card-inner {
+          width: 100%;
+          height: 100%;
+          background-color: #1a1a1a;
+          border-radius: 18px;
+          transition: all 0.2s;
+        }
+
+        .unlock-card-inner:hover {
+          transform: scale(0.98);
+          border-radius: 20px;
+        }
+      `}</style>
+      
       {/* Vertical Dock with Gooey Effects */}
       <VerticalDock 
         items={[
@@ -494,11 +558,13 @@ export default function UnlockCapsule() {
           </Link>
         </div>
 
-        <div className="bg-black/60 backdrop-blur-lg rounded-xl p-8 border border-green-500/20">
-          <h1 className="text-3xl font-bold text-white mb-8 text-center">
-            <Unlock className="w-8 h-8 inline mr-2" />
-            Unlock Time Capsule
-          </h1>
+        <div className="unlock-card">
+          <div className="unlock-card-inner">
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-white mb-8 text-center">
+                <Unlock className="w-8 h-8 inline mr-2" />
+                Unlock Time Capsule
+              </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Capsule ID */}
@@ -647,7 +713,7 @@ export default function UnlockCapsule() {
             )}
 
             {/* Error Display */}
-            {result?.success === false && (
+            {result && !result.success && (
               <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
                 <div className="flex items-center">
                   <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
@@ -694,6 +760,8 @@ export default function UnlockCapsule() {
             </div>
           </div>
         </div>
+        </div>
+      </div>
       </div>
     </div>
   );
