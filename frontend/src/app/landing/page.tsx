@@ -92,7 +92,7 @@ export default function LandingPage() {
             className="text-xl md:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed"
           >
             <TextType
-              text="Create encrypted time capsules that unlock at the perfect moment. Built with quantum-resistant encryption and powered by blockchain technology."
+              text="Build trustless time capsules that unlock only when they should"
               typingSpeed={30}
               initialDelay={2000}
               showCursor={true}
@@ -199,6 +199,9 @@ export default function LandingPage() {
                 Advanced Technology
               </AnimatedGradientText>
             </h2>
+            <h3 className="text-2xl md:text-3xl font-semibold text-green-400 mb-6">
+              Etherlink time oracle smart rollups and next-gen quantum-resistant encryption
+            </h3>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               TimeStone combines cutting-edge cryptography with blockchain technology 
               to ensure your memories remain secure until their designated unlock time.
