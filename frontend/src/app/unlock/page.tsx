@@ -408,21 +408,19 @@ export default function UnlockCapsule() {
             background: transparent;
             border-radius: 20px;
             transition: all 0.3s;
-            padding: 0.25px;
-            border: 1px solid rgba(75, 85, 99, 0.3);
+            padding: 0px;
+            border: 1px solid #22c55e;
           }
 
           .unlock-card:hover {
-            background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
-            box-shadow: 0px 0px 30px 1px rgba(0, 255, 117, 0.30);
-            border: none;
+            border: 1px solid #16a34a;
           }
 
           .unlock-card-inner {
             width: 100%;
             height: 100%;
             background-color: #000000;
-            border-radius: 18px;
+            border-radius: 20px;
             transition: all 0.2s;
           }
 
@@ -495,21 +493,19 @@ export default function UnlockCapsule() {
           background: transparent;
           border-radius: 20px;
           transition: all 0.3s;
-          padding: 0.25px;
-          border: 1px solid rgba(75, 85, 99, 0.3);
+          padding: 0px;
+          border: 1px solid #22c55e;
         }
 
         .unlock-card:hover {
-          background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
-          box-shadow: 0px 0px 0px 0px rgba(0, 255, 117, 0.30);
-          border: none;
+          border: 1px solid #16a34a;
         }
 
         .unlock-card-inner {
           width: 100%;
           height: 100%;
           background-color: #000000;
-          border-radius: 18px;
+          border-radius: 20px;
           transition: all 0.2s;
         }
 
