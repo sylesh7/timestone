@@ -698,7 +698,7 @@ function UnlockCapsuleContent() {
                 readOnly={!!address}
               />
               {address && (
-                <p className="text-xs text-green-400 mt-1">✅ Auto-filled from connected wallet</p>
+              <p className="text-xs text-green-400 mt-1">✅ Auto-filled from connected wallet</p>
               )}
             </div>
 

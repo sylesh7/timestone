@@ -70,6 +70,23 @@ body {
   cursor: none !important;
 }
 
+/* Show default cursor for interactive elements */
+input,
+textarea,
+select,
+button,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+[data-radix-trigger],
+[data-radix-popper-content-wrapper] *,
+[data-rk] *,
+[role="dialog"] *,
+[data-radix-portal] *,
+[data-radix-overlay] * {
+  cursor: auto !important;
+}
+
 /* Keep text cursor for inputs and textareas */
 input,
 textarea,
