@@ -266,6 +266,31 @@ cargo build --target wasm32-unknown-unknown --release
 # Deploy rollup to Tezos testnet
 octez-smart-rollup-node-alpha run operator
 ```
+### Deploy Tezos Smart Rollup (Time Oracle)
+
+Step 1 – Become the tezos user
+```
+sudo adduser tezossudo -su tezos
+```
+Step 2 – Run Tezos L1 Node
+```
+octez-node run \  --data-dir /var/tezos/node \  --rpc-addr 127.0.0.1:8732
+```
+Wait until bootstrapped (may take 20–30 minutes).
+
+Step 3 – Run Smart Rollup Node
+```
+octez-smart-rollup-node run \  --data-dir /var/tezos/smartrollup_sr1CWGm \  --rollup sr1CWmH7T4ujK34pkFebfKpVQFeaxjvwjR2
+```
+This uses the pre‑built rollup. To originate your own use: octez-smart-rollup-originator .... Tip: Visit the Tezos faucet and claim at least 12000 test tokens to cover rollup origination costs.
+
+Step 4 – Folder Permissions Fix
+```
+sudo chmod -R 755 /home/user/timestone
+sudo chown -R tezos:tezos /home/user/timestone/frontend/.next
+sudo chown -R tezos:tezos /home/user/timestone/frontend/node_modules
+```
+Once running, integrate the rollup address into .env files as:
 
 ## Environment Variables
 
@@ -278,6 +303,7 @@ NODE_ENV=development
 CORS_ORIGIN=http://localhost:3000
 TIME_ORACLE_ROLLUP_ADDRESS=your_rollup_address
 TEZOS_RPC_URL=https://rpc.ghostnet.teztnets.xyz
+TIME_ORACLE_ROLLUP_ADDRESS=sr1CWGmH7T4ujK34pkFebfKpVQFeaxjvwjR2
 ```
 
 ### Frontend (.env.local)
