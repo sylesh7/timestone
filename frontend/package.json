@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@civic/auth": "^0.9.5",
+    "@civic/auth-web3": "^0.7.2",
     "@rainbow-me/rainbowkit": "^2.2.8",
-    "@tanstack/react-query": "^5.84.1",
+    "@tanstack/react-query": "^5.85.5",
     "@types/three": "^0.178.1",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
@@ -26,8 +28,8 @@
     "styled-components": "^6.1.19",
     "tailwind-merge": "^3.3.1",
     "three": "^0.178.0",
-    "viem": "^2.33.2",
-    "wagmi": "^2.16.1"
+    "viem": "^2.34.0",
+    "wagmi": "^2.16.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

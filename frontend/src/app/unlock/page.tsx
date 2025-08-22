@@ -7,7 +7,9 @@ import { ArrowLeft, Unlock, Key, Download, Loader2, CheckCircle, AlertCircle, Cl
 import TimestoneAPI from '@/lib/api';
 import { ethers } from 'ethers';
 import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
-import { useAccount } from 'wagmi';
+import { useUser } from "@civic/auth-web3/react";
+import { useAccount } from "wagmi";
+import { userHasWallet } from "@civic/auth-web3";
 import TimeOracleVerification from '@/components/TimeOracleVerification';
 import { TimeOracleResponse } from '@/lib/tezos-rollup';
 import VerticalDock from '@/components/ui/vertical-dock';
@@ -48,6 +50,7 @@ export default function UnlockCapsule() {
 }
 
 function UnlockCapsuleContent() {
+  const userContext = useUser();
   const { address, isConnected } = useAccount();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<UnlockData>({
@@ -70,7 +73,7 @@ function UnlockCapsuleContent() {
     if (address && !formData.requesterAddress) {
       setFormData(prev => ({ ...prev, requesterAddress: address }));
     }
-  }, [address]);
+  }, [address, formData.requesterAddress]);
 
   // Load capsule ID from URL parameters
   useEffect(() => {
@@ -167,7 +170,7 @@ function UnlockCapsuleContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isConnected) {
+    if (!userContext.user || !userHasWallet(userContext) || !isConnected) {
       setResult({ success: false, error: 'Please connect your wallet first' });
       return;
     }

@@ -6,7 +6,9 @@ import { ArrowLeft, Clock, CheckCircle, User, Calendar, FileIcon, Eye, Unlock, M
 import TimestoneAPI from '@/lib/api';
 import { ethers } from 'ethers';
 import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
-import { useAccount } from 'wagmi';
+import { useUser } from "@civic/auth-web3/react";
+import { useAccount } from "wagmi";
+import { userHasWallet } from "@civic/auth-web3";
 import { ShinyButton } from '@/components/ui/shiny-button';
 import EncryptedButton from '@/components/ui/encrypted-button';
 import VerticalDock from '@/components/ui/vertical-dock';
@@ -33,6 +35,7 @@ interface Capsule {
 }
 
 export default function Dashboard() {
+  const userContext = useUser();
   const { address, isConnected } = useAccount();
   const [capsules, setCapsules] = useState<Capsule[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +48,7 @@ export default function Dashboard() {
   }, []);
 
   const loadUserCapsules = async () => {
-    if (!isConnected || !address) {
+    if (!userContext.user || !userHasWallet(userContext) || !isConnected) {
       setCapsules([]);
       return;
     }  
@@ -59,7 +62,7 @@ export default function Dashboard() {
       const contract = new ethers.Contract(TIME_ORACLE_FILE_LOCKER_ADDRESS, TIME_ORACLE_FILE_LOCKER_ABI, provider);
       
       // Get all files for the user (both created and received)
-      const allFileIds = await contract.getAllUserFiles(address);
+      const allFileIds = await contract.getAllUserFiles(address!);
       
       // Get detailed info for each file
       const capsulesData = await Promise.all(allFileIds.map(async (fileId: string) => {
@@ -68,8 +71,8 @@ export default function Dashboard() {
           const [ipfsHash, fileName, unlockTimestamp, owner, recipient, lockFee, isUnlocked] = fileInfo;
           
           // Determine role based on current user's address
-          const isCreator = address.toLowerCase() === owner.toLowerCase();
-          const isRecipient = address.toLowerCase() === recipient.toLowerCase();
+          const isCreator = address!.toLowerCase() === owner.toLowerCase();
+          const isRecipient = address!.toLowerCase() === recipient.toLowerCase();
           
           return {
             fileId,
@@ -144,12 +147,12 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (userContext.user && userHasWallet(userContext) && isConnected) {
       loadUserCapsules();
     } else {
       setCapsules([]);
     }
-  }, [isConnected, address]);
+  }, [userContext.user, isConnected, address]);
 
   useEffect(() => {
     loadStats();
