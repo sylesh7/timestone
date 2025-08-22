@@ -18,7 +18,6 @@ import { MagicCard } from '@/components/ui/magic-card';
 import TextType from '@/components/ui/text-type';
 import { AnimatedBeam } from '@/components/ui/animated-beam';
 import Ripple from '@/components/ui/ripple';
-import { RainbowButton } from '@/components/ui/rainbow-button';
 import ScrollFloat from '@/components/ui/scroll-float';
 
 

@@ -6,7 +6,9 @@ import { ArrowLeft, Upload, Calendar, User, MessageSquare, Loader2, CheckCircle,
 import TimestoneAPI from '@/lib/api';
 import { ethers } from 'ethers';
 import { TIME_ORACLE_FILE_LOCKER_ABI, TIME_ORACLE_FILE_LOCKER_ADDRESS } from '@/lib/contract';
-import { useAccount } from 'wagmi';
+import { useUser } from "@civic/auth-web3/react";
+import { useAccount } from "wagmi";
+import { userHasWallet } from "@civic/auth-web3";
 import VerticalDock from '@/components/ui/vertical-dock';
 
 // Magic UI Components
@@ -34,6 +36,7 @@ interface CapsuleResult {
 }
 
 export default function CreateCapsule() {
+  const userContext = useUser();
   const { address, isConnected } = useAccount();
   const [formData, setFormData] = useState<CreateCapsuleData>({
     file: null,
@@ -56,7 +59,7 @@ export default function CreateCapsule() {
     if (address && !formData.creatorAddress) {
       setFormData(prev => ({ ...prev, creatorAddress: address }));
     }
-  }, [address]);
+  }, [address, formData.creatorAddress]);
 
   const handleFileChange = (file: File) => {
     setFormData(prev => ({ ...prev, file }));
@@ -93,7 +96,7 @@ export default function CreateCapsule() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isConnected) {
+    if (!userContext.user || !userHasWallet(userContext) || !isConnected) {
       setResult({ success: false, error: 'Please connect your wallet first' });
       return;
     }

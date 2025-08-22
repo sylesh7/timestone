@@ -1,17 +1,21 @@
 'use client';
 
-import '@rainbow-me/rainbowkit/styles.css';
-import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { WagmiProvider } from 'wagmi';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider, createConfig, http } from "wagmi";
+import { embeddedWallet } from "@civic/auth-web3/wagmi";
+import { CivicAuthProvider } from "@civic/auth-web3/nextjs";
+import { CivicWalletButton } from "@/components/ui/civic-wallet-button";
 import { etherlinkTestnet } from '@/lib/chains';
-import { RainbowButton } from '@/components/ui/rainbow-button';
+import React from 'react';
 
-const config = getDefaultConfig({
-  appName: 'TimeStone',
-  projectId: '7a6e6a1f7934519391a590f1b17504df', // Your WalletConnect project ID
+const wagmiConfig = createConfig({
   chains: [etherlinkTestnet],
+  transports: {
+    [etherlinkTestnet.id]: http(),
+  },
+  connectors: [
+    embeddedWallet(),
+  ],
 });
 
 const queryClient = new QueryClient();
@@ -19,13 +23,13 @@ const queryClient = new QueryClient();
 export default function WalletProvider({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <WagmiProvider config={config}>
-        <RainbowKitProvider>
+      <WagmiProvider config={wagmiConfig}>
+        <CivicAuthProvider initialChain={etherlinkTestnet}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem', backgroundColor: 'black' }}>
-            <RainbowButton />
+            <CivicWalletButton />
           </div>
           {children}
-        </RainbowKitProvider>
+        </CivicAuthProvider>
       </WagmiProvider>
     </QueryClientProvider>
   );

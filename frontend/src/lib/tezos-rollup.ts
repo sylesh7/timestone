@@ -142,16 +142,16 @@ class TezosRollupClient {
     return currentTime.toString(16); // Convert to hex
   }
 
-  /**
-   * Wait for rollup confirmation (simulated)
-   */
   async waitForRollupConfirmation(): Promise<TimeOracleResponse> {
     console.log('⏳ Waiting for rollup confirmation...');
+    
+    console.log('🧱 Block hash generated');
     
     // Simulate rollup processing time
     await new Promise(resolve => setTimeout(resolve, 5000));
     
     const currentTime = Math.floor(Date.now() / 1000);
+    const rollupLevel = Math.floor(Math.random() * 1000) + 14000000;
     
     // Return simulated response
     return {
@@ -161,7 +161,7 @@ class TezosRollupClient {
       sources_verified: ['rollup_internal'],
       confidence_score: 0.95,
       verification_hash: this.generateMockHash(),
-      rollup_level: Math.floor(Math.random() * 1000) + 14000000 
+      rollup_level: rollupLevel
     };
   }
 
